@@ -65,6 +65,7 @@
 #include "util/ReadingPace.h"
 #include "util/ScreenshotUtil.h"
 #include "util/SlideSwitch.h"
+#include "util/TextPresets.h"
 
 namespace {
 // The X4 Pro and X4 Classic carry the X4's panel but sit outside isXteinkDevice()
@@ -2582,7 +2583,8 @@ void EpubReaderActivity::renderStatusBar() const {
 
 namespace {
 constexpr StrId kTextRowNames[] = {StrId::STR_FONT,           StrId::STR_FONT_SIZE,     StrId::STR_LINE_SPACING,
-                                   StrId::STR_PARA_ALIGNMENT, StrId::STR_FOCUS_READING, StrId::STR_TEXT_WEIGHT};
+                                   StrId::STR_PARA_ALIGNMENT, StrId::STR_FOCUS_READING, StrId::STR_TEXT_WEIGHT,
+                                   StrId::STR_TEXT_PRESETS};
 constexpr StrId kWeightIds[] = {StrId::STR_TEXT_WEIGHT_NORMAL, StrId::STR_TEXT_WEIGHT_MEDIUM,
                                 StrId::STR_TEXT_WEIGHT_HEAVY};
 constexpr StrId kAlignIds[] = {StrId::STR_JUSTIFY, StrId::STR_ALIGN_LEFT, StrId::STR_CENTER, StrId::STR_ALIGN_RIGHT,
@@ -2667,6 +2669,30 @@ void EpubReaderActivity::showTextRowPopup(const int row) {
                           applyTextSettingLive();
                         });
       break;
+    case 6: {
+      // Text presets: three "use" rows, then three "save" rows.
+      std::vector<std::string> labels;
+      for (int slot = 0; slot < text_presets::kSlots; ++slot) {
+        const auto summary = text_presets::summary(slot);
+        char line[96];
+        snprintf(line, sizeof(line), tr(STR_PRESET_USE_FORMAT), slot + 1,
+                 summary.empty() ? tr(STR_PRESET_EMPTY) : summary.c_str());
+        labels.emplace_back(line);
+      }
+      for (int slot = 0; slot < text_presets::kSlots; ++slot) {
+        char line[64];
+        snprintf(line, sizeof(line), tr(STR_PRESET_SAVE_FORMAT), slot + 1);
+        labels.emplace_back(line);
+      }
+      overlayPopup.show(StrId::STR_TEXT_PRESETS, labels, 0, [this](int idx) {
+        if (idx < text_presets::kSlots) {
+          if (text_presets::apply(idx)) applyTextSettingLive();
+        } else {
+          text_presets::save(idx - text_presets::kSlots);
+        }
+      });
+      break;
+    }
     case 5:
       // Weight changes no layout: only the page needs a repaint.
       overlayPopup.show(StrId::STR_TEXT_WEIGHT, kWeightIds, static_cast<int>(std::size(kWeightIds)),

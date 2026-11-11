@@ -48,6 +48,15 @@ read darker on e-ink. Letter spacing and page layout stay the same, so
 changing it never re-paginates the book. It applies to EPUB pages with
 anti-aliased (2-bit) fonts, which covers the built-in and SD-card fonts.
 
+## Text presets
+In the toolbar's Text panel, **Text presets** saves the current text
+settings (font, size, line, word and letter spacing, paragraph spacing and
+indent, alignment, margins, hyphenation, book styles, focus reading,
+anti-aliasing and text weight) into one of three presets, and applies a
+saved preset in one step, for example one for day reading and one for a
+larger, heavier night setting. Presets live in
+`/.crosspoint/luna_presets.json`.
+
 ## Taps and gestures
 See [controls.md](controls.md): tap zones with drawn layouts, tap and swipe
 switches, the left-edge brightness slide, swipe up/down actions, and toolbar
