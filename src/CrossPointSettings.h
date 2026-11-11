@@ -245,6 +245,22 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // "tapForReaderMenu" key: 0/1 keep their old Off/Tap meaning.
   enum SHOW_READER_MENU { READER_MENU_OFF = 0, READER_MENU_TAP = 1, READER_MENU_SWIPE_UP = 2, SHOW_READER_MENU_COUNT };
 
+  // Which screen areas turn back, turn forward, or open the reader menu
+  // (ReaderUtils::tapZoneAt). The screen is a 3x3 grid, boxes 1-9 by rows.
+  enum TAP_ZONE_LAYOUT {
+    TAP_ZONES_CLASSIC = 0,    // left third back, center box menu, rest forward
+    TAP_ZONES_ROWS = 1,       // top row back, middle row menu, bottom row forward
+    TAP_ZONES_COLUMNS = 2,    // left column back, middle column menu, right forward
+    TAP_ZONES_GRID_A = 3,     // 1,2,3,6 back; 4,7,8,9 forward; 5 menu
+    TAP_ZONES_GRID_B = 4,     // 1,2,4,7 back; 3,6,8,9 forward; 5 menu
+    TAP_ZONES_HALVES_TB = 5,  // top half back, bottom half forward, center box menu
+    TAP_ZONES_HALVES_LR = 6,  // left half back, right half forward, center box menu
+    TAP_ZONES_BACK_1 = 7,     // box 1 back, 5 menu, the rest forward
+    TAP_ZONES_BACK_2 = 8,     // box 2 back, 5 menu, the rest forward
+    TAP_ZONES_BACK_3 = 9,     // box 3 back, 5 menu, the rest forward
+    TAP_ZONE_LAYOUT_COUNT
+  };
+
   enum QUICK_RESUME_SLEEP_SCREEN {
     QUICK_RESUME_NEVER = 0,
     QUICK_RESUME_AFTER_TIMEOUT = 1,
@@ -399,6 +415,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // up-swipe). Only surfaced on home-key boards, where Home is the capacitive
   // key and the bottom edge is free; elsewhere it stays at the Tap default.
   uint8_t showReaderMenu = READER_MENU_TAP;
+  // Tap areas in the reader (TAP_ZONE_LAYOUT).
+  uint8_t tapZoneLayout = TAP_ZONES_CLASSIC;
   // Frontlight quick-panel state. Category-less SettingsList entries persist
   // these without adding them to the regular Settings screen.
   uint8_t frontlightBrightness = 60;

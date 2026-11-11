@@ -32,6 +32,7 @@
 #include "SettingsList.h"
 #include "SilentRestart.h"
 #include "StatusBarSettingsActivity.h"
+#include "TapZonesPickerActivity.h"
 #include "TextSettingsActivity.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/util/IntervalSelectionActivity.h"
@@ -99,7 +100,8 @@ bool belongsToControlsGroup(const SettingInfo& setting, ControlsGroup group) {
              field == &CrossPointSettings::sideButtonFollowOrientation;
     case ControlsGroup::Touch:
       return field == &CrossPointSettings::touchReaderControls || field == &CrossPointSettings::pageTurnGesture ||
-             field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu;
+             field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu ||
+             field == &CrossPointSettings::tapZoneLayout;
     case ControlsGroup::Root:
       return !belongsToControlsGroup(setting, ControlsGroup::Power) &&
              !belongsToControlsGroup(setting, ControlsGroup::Front) &&
@@ -296,6 +298,10 @@ void SettingsActivity::toggleSelectedSetting() {
   const bool sleepScreenChanged = setting.valuePtr == &CrossPointSettings::sleepScreen;
   const bool quickResumeTimeoutChanged = setting.valuePtr == &CrossPointSettings::quickResumeSleepScreen;
 
+  if (setting.valuePtr == &CrossPointSettings::tapZoneLayout) {
+    openTapZonesPicker();
+    return;
+  }
   if (setting.nameId == StrId::STR_TIME_TO_SLEEP) {
     openSleepTimeoutPicker();
     return;
@@ -549,6 +555,19 @@ void SettingsActivity::syncQuickResumeTimeoutForSleepScreen(bool sleepScreenChan
     SETTINGS.quickResumeSleepScreen = CrossPointSettings::QUICK_RESUME_SLEEP_SCREEN::QUICK_RESUME_NEVER;
     quickResumeTimeoutAutoEnabled = false;
   }
+}
+
+void SettingsActivity::openTapZonesPicker() {
+  auto activity = makeUniqueNoThrow<TapZonesPickerActivity>(renderer, mappedInput);
+  if (!activity) {
+    LOG_ERR("SET", "OOM: TapZonesPickerActivity");
+    return;
+  }
+  // The picker saves the choice itself; refresh the row's value text.
+  startActivityForResult(std::move(activity), [this](const ActivityResult&) {
+    rebuildSettings();
+    requestUpdate();
+  });
 }
 
 void SettingsActivity::openSleepTimeoutPicker() {

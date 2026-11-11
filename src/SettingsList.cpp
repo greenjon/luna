@@ -3,6 +3,8 @@
 #include <array>
 #include <utility>
 
+#include "activities/settings/TapZoneLayoutNames.h"
+
 void forEachBaseSetting(SettingVisitor visit, void* context) {
   // Load and save walk this list, so every condition here must be fixed before
   // settings load. Runtime probes belong in isHiddenOnDevice().
@@ -159,6 +161,10 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
                            {StrId::STR_TAP_AND_SWIPE, StrId::STR_TAP_ONLY, StrId::STR_SWIPE_ONLY,
                             StrId::STR_INVERTED_TAP, StrId::STR_DISABLED},
                            "previousPageGesture", StrId::STR_CAT_CONTROLS));
+    // The device row opens TapZonesPickerActivity (drawn layouts); the web
+    // settings page shows the names.
+    emit(SettingInfo::StaticEnum(StrId::STR_TAP_ZONES, &CrossPointSettings::tapZoneLayout, TAP_ZONE_LAYOUT_NAMES,
+                                 "tapZoneLayout", StrId::STR_CAT_CONTROLS));
   }
   // The reader-menu gesture choice only makes sense where the menu stays
   // reachable without the tap and the bottom edge is free (the capacitive

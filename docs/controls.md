@@ -10,6 +10,14 @@ options depend on the device.
 - **Side buttons** contains the reader layout, orientation, and page-turn long press.
 - **Taps and gestures** contains **Touch controls while reading** and the page/menu gestures.
 
+**Tap zones** (in Taps and gestures) chooses which parts of the reading page
+turn back, turn forward, or open the reader menu. The picker draws each layout
+as a small page: gray turns back, white turns forward, black opens the menu.
+Tap a layout to choose it. **Classic** is the default: the left third turns
+back, the center box opens the menu, and the rest turns forward. Right-to-left
+books and **Inverted Tap** mirror the layout left to right. When the reader menu
+is not set to open by tap, its zone turns forward instead.
+
 **Page turn long press** is shared by Front buttons and Side buttons. Changing it
 in either group changes the same setting.
 

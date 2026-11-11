@@ -6,6 +6,7 @@
 #include <HalTiltSensor.h>
 #include <Logging.h>
 
+#include <algorithm>
 #include <cctype>
 #include <string_view>
 
@@ -84,6 +85,45 @@ inline PageTurnResult detectPageTurn(const MappedInputManager& input) {
   return {prev, next, tiltPrev || tiltNext};
 }
 
+enum class TapZone : uint8_t { Back, Forward, Menu };
+
+// Which tap zone (x, y) falls in for a TAP_ZONE_LAYOUT on a width x height
+// screen. mirror flips left and right (right-to-left books, Inverted Tap).
+// Thirds and halves both land on a 6x6 grid, which the settings picker uses
+// to draw each layout from this same function.
+inline TapZone tapZoneAt(const uint8_t layout, int x, const int y, const int width, const int height,
+                         const bool mirror) {
+  if (width <= 0 || height <= 0) return TapZone::Forward;
+  if (mirror) x = width - 1 - x;
+  const int col = std::clamp(x * 3 / width, 0, 2);
+  const int row = std::clamp(y * 3 / height, 0, 2);
+  const int box = row * 3 + col + 1;  // 1..9, by rows
+  const auto backIf = [](const bool back) { return back ? TapZone::Back : TapZone::Forward; };
+  if (layout == CrossPointSettings::TAP_ZONES_ROWS)
+    return row == 0 ? TapZone::Back : row == 1 ? TapZone::Menu : TapZone::Forward;
+  if (layout == CrossPointSettings::TAP_ZONES_COLUMNS)
+    return col == 0 ? TapZone::Back : col == 1 ? TapZone::Menu : TapZone::Forward;
+  if (box == 5) return TapZone::Menu;
+  switch (layout) {
+    case CrossPointSettings::TAP_ZONES_GRID_A:
+      return backIf(box <= 3 || box == 6);
+    case CrossPointSettings::TAP_ZONES_GRID_B:
+      return backIf(box <= 2 || box == 4 || box == 7);
+    case CrossPointSettings::TAP_ZONES_HALVES_TB:
+      return backIf(y < height / 2);
+    case CrossPointSettings::TAP_ZONES_HALVES_LR:
+      return backIf(x < width / 2);
+    case CrossPointSettings::TAP_ZONES_BACK_1:
+      return backIf(box == 1);
+    case CrossPointSettings::TAP_ZONES_BACK_2:
+      return backIf(box == 2);
+    case CrossPointSettings::TAP_ZONES_BACK_3:
+      return backIf(box == 3);
+    default:  // Classic
+      return backIf(col == 0);
+  }
+}
+
 struct TouchPageTurn {
   bool prev;
   bool next;
@@ -119,42 +159,40 @@ inline TouchPageTurn detectTouchPageTurn(const GfxRenderer& renderer, const Mapp
     return result;
   }
 
-  const int width = renderer.getScreenWidth();
-  const int height = renderer.getScreenHeight();
-  // Reserve the centered reader-menu tap target when this view has a menu.
-  if (reserveReaderMenuTap && SETTINGS.showReaderMenu == CrossPointSettings::READER_MENU_TAP && x >= width / 3 &&
-      x < width - width / 3 && y >= height / 3 && y < height - height / 3) {
+  // RTL books and Inverted Tap each mirror the zones left to right.
+  const bool mirror = (SETTINGS.pageTurnGesture == CrossPointSettings::INVERTED_TAP ||
+                       SETTINGS.previousPageGesture == CrossPointSettings::INVERTED_TAP) != rtlBook;
+  const TapZone zone =
+      tapZoneAt(SETTINGS.tapZoneLayout, x, y, renderer.getScreenWidth(), renderer.getScreenHeight(), mirror);
+  // Reserve the reader-menu zone when this view has a menu; otherwise it
+  // turns forward.
+  if (zone == TapZone::Menu && reserveReaderMenuTap && SETTINGS.showReaderMenu == CrossPointSettings::READER_MENU_TAP) {
     return result;
   }
 
   // Give the whole page to the sole tap-enabled direction. When both accept
-  // taps, split at the left third. RTL books and Inverted Tap each reverse
-  // the shared zones.
-  const bool inverted = (SETTINGS.pageTurnGesture == CrossPointSettings::INVERTED_TAP ||
-                         SETTINGS.previousPageGesture == CrossPointSettings::INVERTED_TAP) != rtlBook;
-  const bool nextZone = inverted ? x < (width * 2) / 3 : x >= width / 3;
+  // taps, the layout's back zone turns back.
+  const bool nextZone = zone != TapZone::Back;
   result.next = nextTaps && (!prevTaps || nextZone);
   result.prev = prevTaps && (!nextTaps || !nextZone);
   result.heldMs = gpio.lastTouchHeldMs();
   return result;
 }
 
-// Tap in the center third of the screen: the tap path into the reader menu on
-// every touch board. Reader pages reserve this rectangle for the menu,
-// so it stays free in tap mode. The Off/Swipe Up
-// alternatives are only surfaced on home-key boards (SettingsList), where the
-// menu stays reachable through the key's long-press function.
+// Tap in the Tap zones layout's menu zone: the tap path into the reader menu
+// on every touch board. Reader pages reserve this zone for the menu, so it
+// stays free in tap mode. The Off/Swipe Up alternatives are only surfaced on
+// home-key boards (SettingsList), where the menu stays reachable through the
+// key's long-press function.
 inline bool isTouchMenuTap(const GfxRenderer& renderer, const MappedInputManager& input) {
   if (!input.hasTouch()) return false;
   if (SETTINGS.showReaderMenu != CrossPointSettings::READER_MENU_TAP) return false;
   int x = 0;
   int y = 0;
   if (!input.wasScreenTapped(x, y)) return false;
-  const int width = renderer.getScreenWidth();
-  const int height = renderer.getScreenHeight();
-  const int zoneWidth = width / 3;
-  const int zoneHeight = height / 3;
-  return x >= zoneWidth && x < width - zoneWidth && y >= zoneHeight && y < height - zoneHeight;
+  // The menu zone never moves when mirrored, so no mirror flag is needed.
+  return tapZoneAt(SETTINGS.tapZoneLayout, x, y, renderer.getScreenWidth(), renderer.getScreenHeight(), false) ==
+         TapZone::Menu;
 }
 
 // Reader menu opens on the menu edge-swipe or a center-third tap. Home-key
