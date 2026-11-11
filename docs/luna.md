@@ -15,6 +15,12 @@ seconds and pauses over 10 minutes don't count), averaged over recent pages
 and kept across books. The book estimate assumes the rest of the book is as
 dense as the current chapter, so it moves as you read.
 
+## Time left in the status bar
+Settings → Reader → Customise Status Bar → **Title** has a fourth choice,
+**Time left**: the status bar then shows "12 min left in chapter" on every
+page, from the same reading pace. It stays empty until the pace is known.
+EPUB books only.
+
 ## Taps and gestures
 See [controls.md](controls.md): tap zones with drawn layouts, tap and swipe
 switches, the left-edge brightness slide, and toolbar buttons.

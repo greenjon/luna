@@ -48,7 +48,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     PROGRESS_BAR_THICK = 2,
     STATUS_BAR_PROGRESS_BAR_THICKNESS_COUNT
   };
-  enum STATUS_BAR_TITLE { BOOK_TITLE = 0, CHAPTER_TITLE = 1, HIDE_TITLE = 2, STATUS_BAR_TITLE_COUNT };
+  // TIME_LEFT: the time left in the chapter at the reading pace (Luna).
+  enum STATUS_BAR_TITLE { BOOK_TITLE = 0, CHAPTER_TITLE = 1, HIDE_TITLE = 2, TIME_LEFT = 3, STATUS_BAR_TITLE_COUNT };
   enum XTC_STATUS_BAR_MODE {
     XTC_STATUS_BAR_HIDE = 0,
     XTC_STATUS_BAR_BOTTOM = 1,

@@ -2474,6 +2474,28 @@ void EpubReaderActivity::drawClippingHighlights(const Page& page, const int font
           static_cast<unsigned>(chapterClippings), static_cast<unsigned>(highlightedWords), millis() - started);
 }
 
+// Time left in the chapter (and the book, when bookOut is set) at the reading
+// pace. The book's remaining pages are estimated from this chapter's pages per
+// share of the book. False until the pace is known.
+bool EpubReaderActivity::timeLeftText(char* chapterOut, const size_t chapterSize, char* bookOut,
+                                      const size_t bookSize) const {
+  if (!reading_pace::known() || !epub || !section) return false;
+  const int pageCount = section->estimatedTotalPages();
+  if (pageCount <= 0) return false;
+  const auto chapterPagesLeft = static_cast<float>(std::max(1, pageCount - section->currentPage));
+  reading_pace::formatDuration(chapterOut, chapterSize, reading_pace::secondsForPages(chapterPagesLeft));
+  if (bookOut) {
+    const float spanStart = epub->calculateProgress(currentSpineIndex, 0.0f);
+    const float spanEnd = epub->calculateProgress(currentSpineIndex, 1.0f);
+    float bookPagesLeft = chapterPagesLeft;
+    if (spanEnd - spanStart > 0.0001f) {
+      bookPagesLeft += std::max(0.0f, 1.0f - spanEnd) * static_cast<float>(pageCount) / (spanEnd - spanStart);
+    }
+    reading_pace::formatDuration(bookOut, bookSize, reading_pace::secondsForPages(bookPagesLeft));
+  }
+  return true;
+}
+
 void EpubReaderActivity::renderStatusBar() const {
   const int currentPage = section ? section->currentPage + 1 : 1;
   const float pageCount = section ? section->estimatedTotalPages() : 1;
@@ -2511,6 +2533,14 @@ void EpubReaderActivity::renderStatusBar() const {
     }
   } else if (sb.titleMode == CrossPointSettings::STATUS_BAR_TITLE::BOOK_TITLE) {
     title = epub ? epub->getTitle() : "";
+  } else if (sb.titleMode == CrossPointSettings::STATUS_BAR_TITLE::TIME_LEFT) {
+    // Empty until the reading pace is known (a few pages in).
+    char chapterText[24];
+    if (timeLeftText(chapterText, sizeof(chapterText), nullptr, 0)) {
+      char line[48];
+      snprintf(line, sizeof(line), tr(STR_TIME_LEFT_IN_CHAPTER_FORMAT), chapterText);
+      title = line;
+    }
   }
 
   GUI.drawStatusBar(renderer, bookProgress, currentPage, pageCount, title, 0, textYOffset, true, currentPageBookmarked,
@@ -2766,21 +2796,10 @@ void EpubReaderActivity::renderOverlay() {
     pageInfo = std::to_string(section->currentPage + 1) + "/" + std::to_string(pageCount) + "   " +
                std::to_string(clampPercent(static_cast<int>(bookProgress * 100.0f + 0.5f))) + "%";
     model.bookTitle = epub->getTitle().c_str();
-    // Time left: pages left at the measured pace. The book's remaining pages
-    // are estimated from this chapter's pages per share of the book.
-    if (reading_pace::known() && pageCount > 0) {
-      const auto chapterPagesLeft = static_cast<float>(pageCount - section->currentPage);
-      const float spanStart = epub->calculateProgress(currentSpineIndex, 0.0f);
-      const float spanEnd = epub->calculateProgress(currentSpineIndex, 1.0f);
-      float bookPagesLeft = chapterPagesLeft;
-      if (spanEnd - spanStart > 0.0001f) {
-        bookPagesLeft += std::max(0.0f, 1.0f - spanEnd) * static_cast<float>(pageCount) / (spanEnd - spanStart);
-      }
-      char chapterText[24];
-      char bookText[24];
+    char chapterText[24];
+    char bookText[24];
+    if (timeLeftText(chapterText, sizeof(chapterText), bookText, sizeof(bookText))) {
       char line[96];
-      reading_pace::formatDuration(chapterText, sizeof(chapterText), reading_pace::secondsForPages(chapterPagesLeft));
-      reading_pace::formatDuration(bookText, sizeof(bookText), reading_pace::secondsForPages(bookPagesLeft));
       snprintf(line, sizeof(line), tr(STR_TIME_LEFT_FORMAT), chapterText, bookText);
       timeLeft = line;
       model.timeLeft = timeLeft.c_str();
