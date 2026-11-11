@@ -227,6 +227,16 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     }
   }
 
+  // Inverted Tap (and Luna's short-lived "tapZonesMirrored" flag) become the
+  // mirrored tap zones layout; the gesture pair keeps only which gestures
+  // turn the page.
+  if (pageTurnGesture == INVERTED_TAP || previousPageGesture == INVERTED_TAP || (doc["tapZonesMirrored"] | 0) != 0) {
+    tapZoneLayout = mirroredTapZoneLayout(tapZoneLayout);
+    if (pageTurnGesture == INVERTED_TAP) pageTurnGesture = TAP_ONLY;
+    if (previousPageGesture == INVERTED_TAP) previousPageGesture = TAP_ONLY;
+    needsResave = true;
+  }
+
   if (doc["sleepTimeoutMinutes"].isNull() && !doc["sleepTimeout"].isNull()) {
     const uint8_t legacyValue =
         clamp(doc["sleepTimeout"] | (uint8_t)SLEEP_10_MIN, SLEEP_TIMEOUT_COUNT, (uint8_t)SLEEP_10_MIN);

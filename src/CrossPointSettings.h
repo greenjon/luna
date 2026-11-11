@@ -258,8 +258,36 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     TAP_ZONES_BACK_1 = 7,     // box 1 back, 5 menu, the rest forward
     TAP_ZONES_BACK_2 = 8,     // box 2 back, 5 menu, the rest forward
     TAP_ZONES_BACK_3 = 9,     // box 3 back, 5 menu, the rest forward
+    // Mirror images of the layouts above whose back zone is on the left.
+    TAP_ZONES_CLASSIC_RIGHT = 10,  // right third back
+    TAP_ZONES_COLUMNS_RIGHT = 11,  // right column back, left column forward
+    TAP_ZONES_HALVES_RL = 12,      // right half back, left half forward
     TAP_ZONE_LAYOUT_COUNT
   };
+  // The layout that is this one's mirror image, or itself when the mirror
+  // image is not a layout (a symmetric one, or the two grids).
+  static constexpr uint8_t mirroredTapZoneLayout(const uint8_t layout) {
+    switch (layout) {
+      case TAP_ZONES_CLASSIC:
+        return TAP_ZONES_CLASSIC_RIGHT;
+      case TAP_ZONES_CLASSIC_RIGHT:
+        return TAP_ZONES_CLASSIC;
+      case TAP_ZONES_COLUMNS:
+        return TAP_ZONES_COLUMNS_RIGHT;
+      case TAP_ZONES_COLUMNS_RIGHT:
+        return TAP_ZONES_COLUMNS;
+      case TAP_ZONES_HALVES_LR:
+        return TAP_ZONES_HALVES_RL;
+      case TAP_ZONES_HALVES_RL:
+        return TAP_ZONES_HALVES_LR;
+      case TAP_ZONES_BACK_1:
+        return TAP_ZONES_BACK_3;
+      case TAP_ZONES_BACK_3:
+        return TAP_ZONES_BACK_1;
+      default:
+        return layout;
+    }
+  }
 
   enum QUICK_RESUME_SLEEP_SCREEN {
     QUICK_RESUME_NEVER = 0,

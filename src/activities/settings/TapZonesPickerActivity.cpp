@@ -20,6 +20,14 @@ constexpr int kCells = 6;
 constexpr int16_t kTilePad = 8;  // air between the tile outline and the page drawing
 // Names wrap to three lines, so none is cut short at four columns.
 constexpr int kNameLines = 3;
+
+// Position of a layout in the picker (TAP_ZONE_LAYOUT_ORDER).
+int positionOf(const uint8_t layout) {
+  for (int i = 0; i < kLayoutCount; ++i) {
+    if (TAP_ZONE_LAYOUT_ORDER[i] == layout) return i;
+  }
+  return 0;
+}
 }  // namespace
 
 TapZonesPickerActivity::TapZonesPickerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -27,7 +35,7 @@ TapZonesPickerActivity::TapZonesPickerActivity(GfxRenderer& renderer, MappedInpu
 
 void TapZonesPickerActivity::onEnter() {
   UiListActivity::onEnter();
-  nav.reset(std::min<int>(SETTINGS.tapZoneLayout, kLayoutCount - 1));
+  nav.reset(positionOf(SETTINGS.tapZoneLayout));
   // A clean first refresh: the gray drawings otherwise keep a ghost of the
   // previous screen's text after a fast refresh.
   renderer.promoteNextRefresh(HalDisplay::HALF_REFRESH);
@@ -39,7 +47,7 @@ const char* TapZonesPickerActivity::headerTitle() const { return tr(STR_TAP_ZONE
 
 void TapZonesPickerActivity::activateIndex(const int index) {
   if (index < 0 || index >= kLayoutCount) return;
-  SETTINGS.tapZoneLayout = static_cast<uint8_t>(index);
+  SETTINGS.tapZoneLayout = TAP_ZONE_LAYOUT_ORDER[index];
   SETTINGS.saveToFile();
   app.clearTapFlash();
   finish();
@@ -114,6 +122,7 @@ void TapZonesPickerActivity::buildScreen(UiScreen& screen) {
   nameStyle.align = fui::TextAlign::Center;
   nameStyle.maxLines = kNameLines;
   for (int i = 0; i < kLayoutCount; ++i) {
+    const uint8_t layout = TAP_ZONE_LAYOUT_ORDER[i];
     const int col = i % columns;
     const int row = i / columns;
     const fui::Rect tile{static_cast<int16_t>(area.x + col * (tileW + gap)),
@@ -121,12 +130,12 @@ void TapZonesPickerActivity::buildScreen(UiScreen& screen) {
     const fui::Rect page{static_cast<int16_t>(tile.x + (tile.width - pageW) / 2),
                          static_cast<int16_t>(tile.y + kTilePad), static_cast<int16_t>(pageW),
                          static_cast<int16_t>(pageH)};
-    drawLayout(screen, static_cast<uint8_t>(i), page);
+    drawLayout(screen, layout, page);
     const fui::Rect name{static_cast<int16_t>(tile.x + 2), static_cast<int16_t>(page.bottom() + kTilePad),
                          static_cast<int16_t>(tile.width - 4), labelH};
     fui::TextStyle style = nameStyle;
-    style.bold = i == SETTINGS.tapZoneLayout;  // the saved choice
-    screen.target().text(name, I18N.get(TAP_ZONE_LAYOUT_NAMES[i]), style);
+    style.bold = layout == SETTINGS.tapZoneLayout;  // the saved choice
+    screen.target().text(name, I18N.get(TAP_ZONE_LAYOUT_NAMES[layout]), style);
     if (i == nav.selected) {
       screen.target().stroke(tile, fui::Paint::solid(fui::Color::Black), 3, tokens.controlRadius);
     }

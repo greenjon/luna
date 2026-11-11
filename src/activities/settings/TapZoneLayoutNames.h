@@ -19,5 +19,18 @@ inline constexpr auto TAP_ZONE_LAYOUT_NAMES = [] {
   values[CrossPointSettings::TAP_ZONES_BACK_1] = StrId::STR_TAP_ZONES_BACK_1;
   values[CrossPointSettings::TAP_ZONES_BACK_2] = StrId::STR_TAP_ZONES_BACK_2;
   values[CrossPointSettings::TAP_ZONES_BACK_3] = StrId::STR_TAP_ZONES_BACK_3;
+  values[CrossPointSettings::TAP_ZONES_CLASSIC_RIGHT] = StrId::STR_TAP_ZONES_CLASSIC_RIGHT;
+  values[CrossPointSettings::TAP_ZONES_COLUMNS_RIGHT] = StrId::STR_TAP_ZONES_COLUMNS_RIGHT;
+  values[CrossPointSettings::TAP_ZONES_HALVES_RL] = StrId::STR_TAP_ZONES_HALVES_RL;
   return values;
 }();
+
+// Picker order: each "back on right" layout right after its left-hand one.
+inline constexpr std::array<uint8_t, CrossPointSettings::TAP_ZONE_LAYOUT_COUNT> TAP_ZONE_LAYOUT_ORDER = {
+    CrossPointSettings::TAP_ZONES_CLASSIC,       CrossPointSettings::TAP_ZONES_CLASSIC_RIGHT,
+    CrossPointSettings::TAP_ZONES_ROWS,          CrossPointSettings::TAP_ZONES_COLUMNS,
+    CrossPointSettings::TAP_ZONES_COLUMNS_RIGHT, CrossPointSettings::TAP_ZONES_GRID_A,
+    CrossPointSettings::TAP_ZONES_GRID_B,        CrossPointSettings::TAP_ZONES_HALVES_TB,
+    CrossPointSettings::TAP_ZONES_HALVES_LR,     CrossPointSettings::TAP_ZONES_HALVES_RL,
+    CrossPointSettings::TAP_ZONES_BACK_1,        CrossPointSettings::TAP_ZONES_BACK_2,
+    CrossPointSettings::TAP_ZONES_BACK_3};

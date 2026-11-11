@@ -8,15 +8,27 @@ options depend on the device.
 - **Front buttons** contains remapping, orientation, Back behavior, and the two
   long-press settings at the bottom.
 - **Side buttons** contains the reader layout, orientation, and page-turn long press.
-- **Taps and gestures** contains **Touch controls while reading** and the page/menu gestures.
+- **Taps and gestures** holds every reader touch setting:
+  - **Touch controls while reading** switches reader touch on or off.
+  - **Tap to turn pages** and **Swipe to turn pages** choose which gestures
+    turn the page.
+  - **Tap zones** chooses which parts of the page turn back, turn forward, or
+    open the reader menu (see below).
+  - **Show Reader Menu** (X4 Pro) chooses how the reader menu opens: Tap,
+    Swipe up from the bottom edge, or Off.
+  - **Reader Menu Style** chooses the List menu or the Toolbar. On devices
+    without touch it stays under Settings → Reader.
 
-**Tap zones** (in Taps and gestures) chooses which parts of the reading page
-turn back, turn forward, or open the reader menu. The picker draws each layout
-as a small page: gray turns back, white turns forward, black opens the menu.
-Tap a layout to choose it. **Classic** is the default: the left third turns
-back, the center box opens the menu, and the rest turns forward. Right-to-left
-books and **Inverted Tap** mirror the layout left to right. When the reader menu
-is not set to open by tap, its zone turns forward instead.
+**Tap zones** draws each layout as a small page: gray turns back, white turns
+forward, black opens the reader menu. Tap a layout to choose it. **Classic** is
+the default: the left third turns back, the center box opens the menu, and the
+rest turns forward. Classic, Three columns and the left/right halves also come
+in a "back on right" version for reading with the other hand. Right-to-left
+books mirror the layout. When the reader menu does not open by tap, its zone
+turns forward instead.
+
+The web settings page still lists the older **Next Page Gesture** and **Prev
+Page Gesture** settings, which can set each direction separately.
 
 **Page turn long press** is shared by Front buttons and Side buttons. Changing it
 in either group changes the same setting.

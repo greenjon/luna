@@ -56,6 +56,12 @@ bool showOnDevice(const SettingInfo& setting) {
   if (setting.valuePtr == &CrossPointSettings::fadingFix && (BoardConfig::isX4Pro() || BoardConfig::isX4Classic())) {
     return false;
   }
+  // The gesture pair shows on the device as the Tap/Swipe to turn pages rows
+  // (and stays on the web settings page).
+  if (setting.valuePtr == &CrossPointSettings::pageTurnGesture ||
+      setting.valuePtr == &CrossPointSettings::previousPageGesture) {
+    return false;
+  }
   // Merged into the Text Settings screen.
   if (setting.category == StrId::STR_CAT_READER && setting.inTextSettings) return false;
   if (setting.valuePtr == &CrossPointSettings::pwrBtnFootnoteBack &&
@@ -75,6 +81,10 @@ SettingsSection sectionFor(const SettingInfo& setting) {
     return SettingsSection::Library;
   }
   if (setting.valuePtr == &CrossPointSettings::sleepTimeoutMinutes) return SettingsSection::Display;
+  // Touch boards keep the menu style with the other reader touch settings.
+  if (setting.valuePtr == &CrossPointSettings::readerMenuStyle && BoardConfig::hasTouch()) {
+    return SettingsSection::Controls;
+  }
   if (setting.category == StrId::STR_CAT_DISPLAY) return SettingsSection::Display;
   if (setting.category == StrId::STR_CAT_READER) return SettingsSection::Reader;
   if (setting.category == StrId::STR_CAT_CONTROLS) return SettingsSection::Controls;
@@ -101,7 +111,8 @@ bool belongsToControlsGroup(const SettingInfo& setting, ControlsGroup group) {
     case ControlsGroup::Touch:
       return field == &CrossPointSettings::touchReaderControls || field == &CrossPointSettings::pageTurnGesture ||
              field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu ||
-             field == &CrossPointSettings::tapZoneLayout;
+             field == &CrossPointSettings::tapZoneLayout || field == &CrossPointSettings::readerMenuStyle ||
+             setting.nameId == StrId::STR_TAP_TO_TURN_PAGES || setting.nameId == StrId::STR_SWIPE_TO_TURN_PAGES;
     case ControlsGroup::Root:
       return !belongsToControlsGroup(setting, ControlsGroup::Power) &&
              !belongsToControlsGroup(setting, ControlsGroup::Front) &&
@@ -176,6 +187,15 @@ void SettingsActivity::rebuildSettings() {
       setting.nameId = StrId::STR_PAGE_TURN_LONG_PRESS;
     }
     settings.push_back(std::move(setting));
+  }
+
+  // The menu style is listed with the reader settings; on this page it goes
+  // last, after how the menu opens.
+  if (section == SettingsSection::Controls && controlsGroup == ControlsGroup::Touch) {
+    const auto row = std::find_if(settings.begin(), settings.end(), [](const SettingInfo& setting) {
+      return setting.valuePtr == &CrossPointSettings::readerMenuStyle;
+    });
+    if (row != settings.end()) std::rotate(row, row + 1, settings.end());
   }
 
   if (section == SettingsSection::Controls && controlsGroup == ControlsGroup::Front) {

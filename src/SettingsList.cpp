@@ -5,6 +5,37 @@
 
 #include "activities/settings/TapZoneLayoutNames.h"
 
+namespace {
+// One gesture value (PAGE_TURN_GESTURE) as its tap and swipe parts.
+bool gestureHasTap(const uint8_t g) {
+  return g == CrossPointSettings::TAP_AND_SWIPE || g == CrossPointSettings::TAP_ONLY ||
+         g == CrossPointSettings::INVERTED_TAP;
+}
+bool gestureHasSwipe(const uint8_t g) {
+  return g == CrossPointSettings::TAP_AND_SWIPE || g == CrossPointSettings::SWIPE_ONLY;
+}
+uint8_t gestureFrom(const bool tap, const bool swipe) {
+  if (tap && swipe) return CrossPointSettings::TAP_AND_SWIPE;
+  if (tap) return CrossPointSettings::TAP_ONLY;
+  if (swipe) return CrossPointSettings::SWIPE_ONLY;
+  return CrossPointSettings::PAGE_TURN_GESTURE_DISABLED;
+}
+bool touchGestureEnabled(const bool tap) {
+  const auto has = tap ? gestureHasTap : gestureHasSwipe;
+  return has(SETTINGS.pageTurnGesture) || has(SETTINGS.previousPageGesture);
+}
+void setTouchGesture(const bool tap, const bool on) {
+  // Inverted Tap from the web page: keep its mirror in the layout.
+  if (SETTINGS.pageTurnGesture == CrossPointSettings::INVERTED_TAP ||
+      SETTINGS.previousPageGesture == CrossPointSettings::INVERTED_TAP) {
+    SETTINGS.tapZoneLayout = CrossPointSettings::mirroredTapZoneLayout(SETTINGS.tapZoneLayout);
+  }
+  for (uint8_t* g : {&SETTINGS.pageTurnGesture, &SETTINGS.previousPageGesture}) {
+    *g = tap ? gestureFrom(on, gestureHasSwipe(*g)) : gestureFrom(gestureHasTap(*g), on);
+  }
+}
+}  // namespace
+
 void forEachBaseSetting(SettingVisitor visit, void* context) {
   // Load and save walk this list, so every condition here must be fixed before
   // settings load. Runtime probes belong in isHiddenOnDevice().
@@ -153,6 +184,16 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
   if (BoardConfig::hasTouch()) {
     emit(SettingInfo::Toggle(StrId::STR_TOUCH_READER_CONTROLS, &CrossPointSettings::touchReaderControls,
                              "touchReaderControls", StrId::STR_CAT_CONTROLS));
+    // Device rows over the gesture pair below (no key: the pair persists).
+    // Tap and swipe each switch on or off for both directions at once.
+    emit(SettingInfo::DynamicEnum(
+        StrId::STR_TAP_TO_TURN_PAGES, {StrId::STR_STATE_OFF, StrId::STR_STATE_ON},
+        [] { return static_cast<uint8_t>(touchGestureEnabled(/*tap=*/true) ? 1 : 0); },
+        [](const uint8_t on) { setTouchGesture(/*tap=*/true, on != 0); }, nullptr, StrId::STR_CAT_CONTROLS));
+    emit(SettingInfo::DynamicEnum(
+        StrId::STR_SWIPE_TO_TURN_PAGES, {StrId::STR_STATE_OFF, StrId::STR_STATE_ON},
+        [] { return static_cast<uint8_t>(touchGestureEnabled(/*tap=*/false) ? 1 : 0); },
+        [](const uint8_t on) { setTouchGesture(/*tap=*/false, on != 0); }, nullptr, StrId::STR_CAT_CONTROLS));
     emit(SettingInfo::Enum(StrId::STR_NEXT_PAGE_GESTURE, &CrossPointSettings::pageTurnGesture,
                            {StrId::STR_TAP_AND_SWIPE, StrId::STR_TAP_ONLY, StrId::STR_SWIPE_ONLY,
                             StrId::STR_INVERTED_TAP, StrId::STR_DISABLED},

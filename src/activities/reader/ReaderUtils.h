@@ -94,6 +94,11 @@ enum class TapZone : uint8_t { Back, Forward, Menu };
 inline TapZone tapZoneAt(const uint8_t layout, int x, const int y, const int width, const int height,
                          const bool mirror) {
   if (width <= 0 || height <= 0) return TapZone::Forward;
+  // The "back on right" layouts are their left-hand layout, mirrored.
+  if (layout == CrossPointSettings::TAP_ZONES_CLASSIC_RIGHT || layout == CrossPointSettings::TAP_ZONES_COLUMNS_RIGHT ||
+      layout == CrossPointSettings::TAP_ZONES_HALVES_RL) {
+    return tapZoneAt(CrossPointSettings::mirroredTapZoneLayout(layout), x, y, width, height, !mirror);
+  }
   if (mirror) x = width - 1 - x;
   const int col = std::clamp(x * 3 / width, 0, 2);
   const int row = std::clamp(y * 3 / height, 0, 2);
@@ -159,7 +164,8 @@ inline TouchPageTurn detectTouchPageTurn(const GfxRenderer& renderer, const Mapp
     return result;
   }
 
-  // RTL books and Inverted Tap each mirror the zones left to right.
+  // RTL books and Inverted Tap (still settable on the web page) each mirror
+  // the zones left to right.
   const bool mirror = (SETTINGS.pageTurnGesture == CrossPointSettings::INVERTED_TAP ||
                        SETTINGS.previousPageGesture == CrossPointSettings::INVERTED_TAP) != rtlBook;
   const TapZone zone =
