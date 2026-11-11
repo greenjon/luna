@@ -4,6 +4,7 @@
 #include <string>
 
 #include "components/UiAppHost.h"
+#include "components/controls/header.h"
 #include "components/lists/list.h"
 
 class GfxRenderer;
@@ -12,8 +13,9 @@ class MappedInputManager;
 // FreeInkUI chrome for the toolbar reader menu (Settings -> Reader -> Reader
 // Menu Style -> Toolbar), painted over the page that is already on screen:
 //
-//  - Toolbar: a bottom sheet holding a chapter scrub row (< capsule >) and a
-//    Contents / Text / More tile row; the page above it stays untouched.
+//  - Toolbar: a top bar (book title, clock, battery) and a bottom sheet
+//    holding a chapter scrub row (< capsule >) and a Contents / Text / More
+//    tile row; the page between them stays untouched.
 //  - Panel: a taller bottom sheet with a title, a paged row list (name left,
 //    value right) and the same tile row as a switcher.
 //
@@ -29,6 +31,7 @@ class ReaderToolbarUi : public UiAppHost {
   struct Model {
     bool panel = false;  // false = toolbar, true = a Contents/Text/More panel
     // Toolbar
+    const char* bookTitle = nullptr;  // top bar title
     const char* chapterTitle = nullptr;
     const char* pageInfo = nullptr;  // "12/40   51%"
     int progressPermille = 0;        // 0..1000 book progress (scrub handle)
@@ -79,10 +82,12 @@ class ReaderToolbarUi : public UiAppHost {
  private:
   static void screenFn(UiScreen& screen, void* user);
   static void onAction(const freeink::ui::ActionEvent& event, void* user);
+  void buildTopBar(UiScreen& screen);
   void buildToolbar(UiScreen& screen);
   void buildPanel(UiScreen& screen);
   void buildToolRow(UiScreen& screen, freeink::ui::LayoutAnchor anchor, int16_t sideInset);
 
+  const GfxRenderer& renderer_;
   Model model_;
   Routed pending_;
   freeink::ui::ListNav nav_;
@@ -97,5 +102,6 @@ class ReaderToolbarUi : public UiAppHost {
   // them off the stack (AGENTS.md: locals stay under 256 bytes).
   freeink::ui::ButtonProps stepProps_;
   freeink::ui::ListProps listProps_;
+  freeink::ui::HeaderProps headerProps_;
   freeink::ui::Rect pageIndicatorRect_{};
 };

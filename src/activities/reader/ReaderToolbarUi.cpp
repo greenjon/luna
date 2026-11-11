@@ -2,6 +2,7 @@
 
 #include <FreeInkUIIcon.h>
 #include <GfxRenderer.h>
+#include <HalClock.h>
 #include <I18n.h>
 
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
 #include "components/icons/readerToolbarIcons.h"
+#include "components/themes/BaseTheme.h"
 
 namespace fui = freeink::ui;
 
@@ -42,7 +44,7 @@ constexpr int kPanelHeightMaxPercent = 72;
 constexpr int kLandscapePanelHeightPercent = 88;
 }  // namespace
 
-ReaderToolbarUi::ReaderToolbarUi(GfxRenderer& renderer) : UiAppHost(renderer) {}
+ReaderToolbarUi::ReaderToolbarUi(GfxRenderer& renderer) : UiAppHost(renderer), renderer_(renderer) {}
 
 void ReaderToolbarUi::begin() {
   resetUi();
@@ -128,8 +130,44 @@ void ReaderToolbarUi::buildToolRow(UiScreen& screen, const fui::LayoutAnchor anc
   }
 }
 
+// Top bar: the app's header band (book title, clock, battery) over the top
+// of the page, so the time is one tap away. No hit rects of its own: a tap
+// on it falls into the sheet's dismiss area and closes the toolbar.
+void ReaderToolbarUi::buildTopBar(UiScreen& screen) {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const auto& theme = screen.theme();
+  headerProps_ = fui::HeaderProps{};
+  headerProps_.title = model_.bookTitle;
+  headerProps_.borderEdges = fui::EdgeBottom;
+  GUI.applyHeaderStatus(renderer_, headerProps_);
+  // The clock shows here even when the header clock setting is off.
+  static char clockText[10];
+  if (halClock.isAvailable() && halClock.formatTime(clockText, sizeof(clockText), SETTINGS.clockFormat == 1)) {
+    headerProps_.status.clockText = clockText;
+  }
+  const fui::Rect full = screen.frame().screen();
+  const auto bandBottom = static_cast<int16_t>(metrics.topPadding + metrics.headerHeight);
+  // Full-bleed white behind the band, so no page text shows above or beside it.
+  screen.target().fill(fui::Rect{full.x, full.y, full.width, static_cast<int16_t>(bandBottom - full.y)},
+                       fui::Paint::solid(fui::Color::White));
+  const fui::Rect band = BaseTheme::headerBand(renderer_,
+                                               fui::Rect{full.x, static_cast<int16_t>(metrics.topPadding), full.width,
+                                                         static_cast<int16_t>(metrics.headerHeight)},
+                                               headerProps_);
+  headerProps_.titleText = theme.titleText;
+  headerProps_.titleText.align = theme.headerTitleAlign;
+  headerProps_.styles = theme.popup;
+  // Same 2px rule as the bottom sheet's edge, whatever the theme's underline.
+  headerProps_.styles.normal.border = fui::Paint::solid(fui::Color::Black);
+  headerProps_.styles.normal.borderWidth = 2;
+  headerProps_.sidePadding = theme.headerSidePadding;
+  headerProps_.minTouchSize = theme.minTouchSize;
+  fui::header(screen.frame(), band, headerProps_);
+}
+
 void ReaderToolbarUi::buildToolbar(UiScreen& screen) {
   const auto& tokens = screen.theme();
+  buildTopBar(screen);
 
   // Sheet height from its content: scrub row, meta line, tool row, and the
   // air between them (a full spaceLg under the scrub row, so the progress
