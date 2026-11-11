@@ -12,6 +12,7 @@
 #include <Utf8.h>
 
 #include <algorithm>
+#include <cstring>
 
 #include "../Memory/Memory.h"
 #include "FontCacheManager.h"
@@ -526,6 +527,39 @@ static void renderCharScaled(const GfxRenderer& renderer, GfxRenderer::RenderMod
   }
 }
 
+namespace {
+// Text weight: the glyph widened by `extra` pixels, each pixel the darkest of
+// itself and the `extra` pixels to its left (2bpp: 0 white .. 3 black). The
+// darkest-of rule keeps black strokes black in every plane, where drawing the
+// glyph twice would let a shifted copy's gray mark a black pixel gray. Output
+// is 2bpp, bit-contiguous rows, like the font data. Returns nullptr when the
+// glyph is too large for the scratch buffer (it is then drawn as designed).
+// Render task only: one static 2.3 KB scratch, reused (no per-glyph heap).
+// 2bpp glyphs only; 1bpp fonts keep their weight.
+const uint8_t* emboldenGlyph(const uint8_t* bitmap, const int width, const int height, const int extra, int& outWidth) {
+  constexpr int kMaxPixels = 96 * 96;
+  static uint8_t scratch[kMaxPixels / 4 + 1];
+  outWidth = width + extra;
+  if (width <= 0 || height <= 0 || outWidth * height > kMaxPixels) return nullptr;
+  std::memset(scratch, 0, static_cast<size_t>((outWidth * height + 3) / 4));
+  const auto source = [&](const int x, const int y) -> uint8_t {
+    if (x < 0 || x >= width) return 0;
+    const int i = y * width + x;
+    return (bitmap[i >> 2] >> (6 - (i & 3) * 2)) & 3;
+  };
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < outWidth; ++x) {
+      uint8_t v = 0;
+      for (int k = 0; k <= extra; ++k) v = std::max<uint8_t>(v, source(x - k, y));
+      if (v == 0) continue;
+      const int o = y * outWidth + x;
+      scratch[o >> 2] |= static_cast<uint8_t>(v << (6 - (o & 3) * 2));
+    }
+  }
+  return scratch;
+}
+}  // namespace
+
 template <TextRotation rotation = TextRotation::None>
 static void renderCharImpl(const GfxRenderer& renderer, GfxRenderer::RenderMode renderMode,
                            const EpdFontFamily& fontFamily, const uint32_t cp, int cursorX, int cursorY,
@@ -581,6 +615,13 @@ static void renderCharImpl(const GfxRenderer& renderer, GfxRenderer::RenderMode 
     frame = {cursorX + fontData->ascender - top, cursorY - left, 0, -1, 1, 0};
   } else {
     frame = {cursorX + left, cursorY - top, 1, 0, 0, 1};
+  }
+  if (const int extra = renderer.getTextWeight(); extra > 0 && is2Bit) {
+    int boldWidth = width;
+    if (const uint8_t* bold = emboldenGlyph(bitmap, width, height, extra, boldWidth)) {
+      renderer.drawGlyphBitmap(bold, boldWidth, height, frame, true, renderMode, pixelState);
+      return;
+    }
   }
   renderer.drawGlyphBitmap(bitmap, width, height, frame, is2Bit, renderMode, pixelState);
 }

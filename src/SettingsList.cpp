@@ -150,6 +150,9 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
   emit(SettingInfo::Value(StrId::STR_PARAGRAPH_INDENTATION, &CrossPointSettings::paragraphIndentSpaces, {0, 5, 1},
                           "paragraphIndentSpaces", StrId::STR_CAT_READER)
            .withTextSettings());
+  emit(SettingInfo::Enum(StrId::STR_TEXT_WEIGHT, &CrossPointSettings::textWeight,
+                         {StrId::STR_TEXT_WEIGHT_NORMAL, StrId::STR_TEXT_WEIGHT_MEDIUM, StrId::STR_TEXT_WEIGHT_HEAVY},
+                         "textWeight", StrId::STR_CAT_READER));
   emit(SettingInfo::Toggle(StrId::STR_TEXT_AA, &CrossPointSettings::textAntiAliasing, "textAntiAliasing",
                            StrId::STR_CAT_READER)
            .withTextSettings());

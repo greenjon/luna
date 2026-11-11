@@ -51,6 +51,7 @@ class GfxRenderer {
   HalDisplay& display;
   RenderMode renderMode;
   mutable bool absoluteGrayPlanes = false;
+  uint8_t textWeight = 0;
   bool ditherImagesInBw = false;
   Orientation orientation;
   bool fadingFix;
@@ -410,6 +411,11 @@ class GfxRenderer {
   // "any ink is black". Only for pages that get no image grayscale pass,
   // because overlay gray planes expect every gray pixel black in the base.
   void setDitherImagesInBw(bool enabled) { ditherImagesInBw = enabled; }
+  // Text weight (Luna): widen each glyph's strokes by this many pixels to the
+  // right (0 = as designed). The reader sets it around its page renders, so
+  // UI text keeps the font's own weight. Advances are unchanged.
+  void setTextWeight(uint8_t extraPixels) { textWeight = extraPixels > 2 ? 2 : extraPixels; }
+  uint8_t getTextWeight() const { return textWeight; }
   bool imagesDitheredInBw() const { return ditherImagesInBw; }
 
   // Tiled grayscale (X4): stream one band of a plane straight to controller RAM

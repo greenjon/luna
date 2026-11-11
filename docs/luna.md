@@ -21,6 +21,14 @@ Settings → Reader → Customise Status Bar → **Title** has a fourth choice,
 page, from the same reading pace. It stays empty until the pace is known.
 EPUB books only.
 
+## Text weight
+Settings → Reader → **Text weight** (also in the toolbar's Text panel):
+**Normal**, **Medium** or **Heavy** widens every letter's strokes by 0, 1 or
+2 pixels. Heavier strokes hide the stair-steps on curves and diagonals and
+read darker on e-ink. Letter spacing and page layout stay the same, so
+changing it never re-paginates the book. It applies to EPUB pages with
+anti-aliased (2-bit) fonts, which covers the built-in and SD-card fonts.
+
 ## Taps and gestures
 See [controls.md](controls.md): tap zones with drawn layouts, tap and swipe
 switches, the left-edge brightness slide, and toolbar buttons.

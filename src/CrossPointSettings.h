@@ -448,6 +448,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t tapZoneLayout = TAP_ZONES_CLASSIC;
   // Slide a finger along the reader's left edge to set the frontlight.
   uint8_t edgeBrightnessSlide = 1;
+  // Reader text weight: extra stroke pixels (0 normal, 1 medium, 2 heavy).
+  uint8_t textWeight = 0;
   // Reader toolbar buttons, left to right (ReaderTool values; 0 = empty).
   uint8_t toolbarTool1 = 1;  // Contents
   uint8_t toolbarTool2 = 2;  // Text

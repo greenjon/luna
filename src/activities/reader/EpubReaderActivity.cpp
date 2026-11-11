@@ -2098,6 +2098,13 @@ void EpubReaderActivity::rememberCurrentContentOffset() {
 void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int orientedMarginTop,
                                         const int orientedMarginRight, const int orientedMarginBottom,
                                         const int orientedMarginLeft) {
+  // Text weight applies to the book's text (and its status bar), not to UI chrome.
+  struct TextWeightScope {
+    GfxRenderer& renderer;
+    ~TextWeightScope() { renderer.setTextWeight(0); }
+  } textWeightScope{renderer};
+  renderer.setTextWeight(SETTINGS.textWeight);
+
   const auto t0 = millis();
   const int fontId = SETTINGS.getReaderFontId();
   ImageBlock::clearRenderFailures();
@@ -2552,8 +2559,10 @@ void EpubReaderActivity::renderStatusBar() const {
 // ---------------------------------------------------------------------------
 
 namespace {
-constexpr StrId kTextRowNames[] = {StrId::STR_FONT, StrId::STR_FONT_SIZE, StrId::STR_LINE_SPACING,
-                                   StrId::STR_PARA_ALIGNMENT, StrId::STR_FOCUS_READING};
+constexpr StrId kTextRowNames[] = {StrId::STR_FONT,           StrId::STR_FONT_SIZE,     StrId::STR_LINE_SPACING,
+                                   StrId::STR_PARA_ALIGNMENT, StrId::STR_FOCUS_READING, StrId::STR_TEXT_WEIGHT};
+constexpr StrId kWeightIds[] = {StrId::STR_TEXT_WEIGHT_NORMAL, StrId::STR_TEXT_WEIGHT_MEDIUM,
+                                StrId::STR_TEXT_WEIGHT_HEAVY};
 constexpr StrId kAlignIds[] = {StrId::STR_JUSTIFY, StrId::STR_ALIGN_LEFT, StrId::STR_CENTER, StrId::STR_ALIGN_RIGHT,
                                StrId::STR_BOOK_S_STYLE};
 constexpr int kTextRowCount = static_cast<int>(std::size(kTextRowNames));
@@ -2591,6 +2600,8 @@ std::string EpubReaderActivity::textRowValue(int row) const {
       return I18N.get(LINE_SPACING_IDS[SETTINGS.lineSpacing % CrossPointSettings::LINE_COMPRESSION_COUNT]);
     case 3:
       return I18N.get(kAlignIds[SETTINGS.paragraphAlignment % CrossPointSettings::PARAGRAPH_ALIGNMENT_COUNT]);
+    case 5:
+      return I18N.get(kWeightIds[SETTINGS.textWeight % std::size(kWeightIds)]);
     default:
       return "";
   }
@@ -2632,6 +2643,16 @@ void EpubReaderActivity::showTextRowPopup(const int row) {
                         SETTINGS.lineSpacing % CrossPointSettings::LINE_COMPRESSION_COUNT, [this](int idx) {
                           SETTINGS.lineSpacing = static_cast<uint8_t>(idx);
                           applyTextSettingLive();
+                        });
+      break;
+    case 5:
+      // Weight changes no layout: only the page needs a repaint.
+      overlayPopup.show(StrId::STR_TEXT_WEIGHT, kWeightIds, static_cast<int>(std::size(kWeightIds)),
+                        SETTINGS.textWeight % std::size(kWeightIds), [this](int idx) {
+                          SETTINGS.textWeight = static_cast<uint8_t>(idx);
+                          SETTINGS.saveToFile();
+                          discardOverlayPage();
+                          requestUpdate();
                         });
       break;
     case 3:
