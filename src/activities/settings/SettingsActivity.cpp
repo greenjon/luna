@@ -119,6 +119,7 @@ bool belongsToControlsGroup(const SettingInfo& setting, ControlsGroup group) {
       return field == &CrossPointSettings::touchReaderControls || field == &CrossPointSettings::pageTurnGesture ||
              field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu ||
              field == &CrossPointSettings::tapZoneLayout || field == &CrossPointSettings::edgeBrightnessSlide ||
+             field == &CrossPointSettings::swipeUpAction || field == &CrossPointSettings::swipeDownAction ||
              field == &CrossPointSettings::readerMenuStyle || setting.nameId == StrId::STR_TAP_TO_TURN_PAGES ||
              setting.nameId == StrId::STR_SWIPE_TO_TURN_PAGES;
     case ControlsGroup::Root:
@@ -334,6 +335,20 @@ void SettingsActivity::toggleSelectedSetting() {
 
   if (setting.valuePtr == &CrossPointSettings::tapZoneLayout) {
     openTapZonesPicker();
+    return;
+  }
+  if (setting.valuePtr == &CrossPointSettings::swipeUpAction ||
+      setting.valuePtr == &CrossPointSettings::swipeDownAction) {
+    auto picker = makeUniqueNoThrow<ReaderToolPickerActivity>(renderer, mappedInput, setting.valuePtr, setting.nameId,
+                                                              /*allowMenu=*/true);
+    if (!picker) {
+      LOG_ERR("SET", "OOM: ReaderToolPickerActivity");
+      return;
+    }
+    startActivityForResult(std::move(picker), [this](const ActivityResult&) {
+      rebuildSettings();
+      requestUpdate();
+    });
     return;
   }
   if (setting.nameId == StrId::STR_TIME_TO_SLEEP) {

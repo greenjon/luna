@@ -31,4 +31,5 @@ anti-aliased (2-bit) fonts, which covers the built-in and SD-card fonts.
 
 ## Taps and gestures
 See [controls.md](controls.md): tap zones with drawn layouts, tap and swipe
-switches, the left-edge brightness slide, and toolbar buttons.
+switches, the left-edge brightness slide, swipe up/down actions, and toolbar
+buttons.

@@ -212,6 +212,11 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
                                  "tapZoneLayout", StrId::STR_CAT_CONTROLS));
     emit(SettingInfo::Toggle(StrId::STR_EDGE_BRIGHTNESS, &CrossPointSettings::edgeBrightnessSlide,
                              "edgeBrightnessSlide", StrId::STR_CAT_CONTROLS));
+    // The device rows open ReaderToolPickerActivity (the list is too long for a popup).
+    emit(SettingInfo::StaticEnum(StrId::STR_SWIPE_UP_ACTION, &CrossPointSettings::swipeUpAction,
+                                 reader_tools::TOOL_NAMES, "swipeUpAction", StrId::STR_CAT_CONTROLS));
+    emit(SettingInfo::StaticEnum(StrId::STR_SWIPE_DOWN_ACTION, &CrossPointSettings::swipeDownAction,
+                                 reader_tools::TOOL_NAMES, "swipeDownAction", StrId::STR_CAT_CONTROLS));
   }
   // The reader-menu gesture choice only makes sense where the menu stays
   // reachable without the tap and the bottom edge is free (the capacitive

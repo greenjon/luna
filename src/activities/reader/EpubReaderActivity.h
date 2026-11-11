@@ -203,6 +203,8 @@ class EpubReaderActivity final : public ReaderActivity {
   std::string moreRowValue(int row) const;
   void activateMoreRow(int row);
   void refreshToolbarTools();
+  bool handleSwipeGesture();
+  void runReaderAction(ReaderTool tool);
   void runToolbarTool(int slot);
   void openFootnoteSelect(bool reopenMenuOnCancel);
   void openDictionaryWordSelect();

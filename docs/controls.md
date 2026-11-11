@@ -17,6 +17,10 @@ options depend on the device.
   - **Slide left edge for brightness** (devices with a frontlight): slide a
     finger up or down the left edge of the page to change the brightness
     while reading. A tap on the edge still turns the page.
+  - **Swipe up** and **Swipe down**: an action for a vertical swipe in the
+    middle of the page, such as the reader menu, Contents, Bookmark here,
+    Night mode or Frontlight. Off by default. Swipes that start near the top
+    or bottom edge keep their usual meaning.
   - **Show Reader Menu** (X4 Pro) chooses how the reader menu opens: Tap,
     Swipe up from the bottom edge, or Off.
   - **Reader Menu Style** chooses the List menu or the Toolbar. On devices

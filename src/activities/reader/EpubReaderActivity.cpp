@@ -62,6 +62,7 @@
 #include "util/ButtonNavigator.h"
 #include "util/ReadingPace.h"
 #include "util/ScreenshotUtil.h"
+#include "util/SlideSwitch.h"
 
 namespace {
 // The X4 Pro and X4 Classic carry the X4's panel but sit outside isXteinkDevice()
@@ -776,6 +777,7 @@ void EpubReaderActivity::loop() {
 
   // A slide along the left edge sets the frontlight; its frames are not taps or swipes.
   if (overlay == Overlay::None && !overlayPopup.isActive() && edgeBrightness.update(mappedInput, renderer)) return;
+  if (overlay == Overlay::None && !overlayPopup.isActive() && handleSwipeGesture()) return;
 
   const auto touch =
       ReaderUtils::detectTouchPageTurn(renderer, mappedInput, ReaderUtils::isRtlBookLanguage(epub->getLanguage()));
@@ -3217,6 +3219,99 @@ std::string EpubReaderActivity::moreRowValue(int row) const {
   }
 }
 
+// Swipe up / down in the middle of the page runs the action chosen in Taps and
+// gestures. Swipes starting near the top or bottom edge keep their own
+// meaning (control center, reader menu, Home).
+bool EpubReaderActivity::handleSwipeGesture() {
+  if (!mappedInput.hasTouch() || !SETTINGS.touchReaderControls || !section) return false;
+  if (SETTINGS.swipeUpAction == 0 && SETTINGS.swipeDownAction == 0) return false;
+  int sx = 0;
+  int sy = 0;
+  const auto dir = mappedInput.wasSwipe(&sx, &sy);
+  if (dir != MappedInputManager::SwipeDir::Up && dir != MappedInputManager::SwipeDir::Down) return false;
+  const int height = renderer.getScreenHeight();
+  if (sy < height / 10 || sy > height - height / 10) return false;
+  const uint8_t value = dir == MappedInputManager::SwipeDir::Up ? SETTINGS.swipeUpAction : SETTINGS.swipeDownAction;
+  if (value == 0 || value >= static_cast<uint8_t>(ReaderTool::Count)) return false;
+  haptic_feedback::touchAction();
+  runReaderAction(static_cast<ReaderTool>(value));
+  return true;
+}
+
+// One reader action outside the toolbar (gestures). Actions that answer with
+// a popup open the toolbar first, so the popup has the toolbar to sit on.
+void EpubReaderActivity::runReaderAction(const ReaderTool tool) {
+  using MA = EpubReaderMenuActivity::MenuAction;
+  if (tool == ReaderTool::Menu) {
+    if (usesToolbarMenu()) {
+      openOverlay(Overlay::Toolbar);
+    } else {
+      openReaderMenu();
+    }
+    return;
+  }
+  if (reader_tools::isPanel(tool)) {
+    if (!usesToolbarMenu()) {
+      openReaderMenu();
+      return;
+    }
+    // Straight to the panel; its switcher pill marks the panel's button, if any.
+    refreshToolbarTools();
+    focusedTool = -1;
+    for (int slot = 0; slot < toolbarToolCount; ++slot) {
+      if (toolbarTools[slot] == tool) focusedTool = slot;
+    }
+    openOverlay(tool == ReaderTool::Contents ? Overlay::Contents
+                : tool == ReaderTool::Text   ? Overlay::Text
+                                             : Overlay::More);
+    return;
+  }
+  switch (tool) {
+    case ReaderTool::Bookmark:
+      if (!showBookmarkMessage) {
+        addBookmark();
+        showBookmarkMessage = true;
+        bookmarkMessageTime = millis();
+        requestUpdate();
+      }
+      return;
+    case ReaderTool::NightMode:
+      SETTINGS.screenInverted = SETTINGS.screenInverted == 0 ? 1 : 0;
+      SETTINGS.saveToFile();
+      requestUpdate();
+      return;
+    case ReaderTool::Light:
+      if (Frontlight.present() && !slideSwitchOwnsLight()) {
+        const bool lightOn = !Frontlight.isOn();
+        Frontlight.setOn(lightOn);
+        SETTINGS.frontlightOn = lightOn ? 1 : 0;
+        SETTINGS.saveToFile();
+      }
+      return;
+    default:
+      break;
+  }
+  buildMoreActions();
+  const auto action = reader_tools::info(tool).action;
+  const auto row =
+      std::find_if(moreItems.begin(), moreItems.end(), [action](const auto& item) { return item.action == action; });
+  if (row == moreItems.end()) return;  // not offered for this book
+  if (action == MA::ROTATE_SCREEN || action == MA::AUTO_PAGE_TURN) {
+    if (!usesToolbarMenu()) {
+      openReaderMenu();
+      return;
+    }
+    openOverlay(Overlay::Toolbar);
+    buildMoreActions();
+  }
+  for (size_t i = 0; i < moreItems.size(); ++i) {
+    if (moreItems[i].action == action) {
+      activateMoreRow(static_cast<int>(i));
+      return;
+    }
+  }
+}
+
 // The toolbar's buttons from Settings > Toolbar buttons, minus actions the
 // More list does not offer right now (no dictionary, no sync account, ...).
 // No buttons set falls back to the stock Contents / Text / More.
@@ -3227,6 +3322,7 @@ void EpubReaderActivity::refreshToolbarTools() {
     const uint8_t value = SETTINGS.*field;
     if (value == 0 || value >= static_cast<uint8_t>(ReaderTool::Count)) continue;
     const auto tool = static_cast<ReaderTool>(value);
+    if (tool == ReaderTool::Menu) continue;  // gestures only
     if (!reader_tools::isPanel(tool)) {
       const auto action = reader_tools::info(tool).action;
       if (std::none_of(moreItems.begin(), moreItems.end(),
@@ -3241,7 +3337,7 @@ void EpubReaderActivity::refreshToolbarTools() {
     toolbarTools[2] = ReaderTool::More;
     toolbarToolCount = 3;
   }
-  focusedTool = std::clamp(focusedTool, 0, toolbarToolCount - 1);
+  focusedTool = std::clamp(focusedTool, -1, toolbarToolCount - 1);  // -1: no button (panel opened by a gesture)
 }
 
 void EpubReaderActivity::runToolbarTool(const int slot) {

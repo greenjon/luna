@@ -456,6 +456,9 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t toolbarTool3 = 3;  // More
   uint8_t toolbarTool4 = 0;
   uint8_t toolbarTool5 = 0;
+  // Reader swipe up / down in the middle of the page (ReaderTool; 0 = none).
+  uint8_t swipeUpAction = 0;
+  uint8_t swipeDownAction = 0;
   // Frontlight quick-panel state. Category-less SettingsList entries persist
   // these without adding them to the regular Settings screen.
   uint8_t frontlightBrightness = 60;

@@ -35,6 +35,7 @@ inline const ToolInfo& info(const ReaderTool tool) {
       {StrId::STR_SCREENSHOT_BUTTON, &icon_tool_screenshot_24, MA::SCREENSHOT},
       {StrId::STR_SYNC_PROGRESS, &icon_tool_sync_24, MA::SYNC},
       {StrId::STR_GO_HOME_BUTTON, &icon_tool_home_24, MA::GO_HOME},
+      {StrId::STR_READER_MENU, &icon_reader_more_24, MA::SELECT_CHAPTER},
   };
   static_assert(sizeof(kInfo) / sizeof(kInfo[0]) == static_cast<size_t>(ReaderTool::Count), "tool table");
   const auto index = static_cast<size_t>(tool);

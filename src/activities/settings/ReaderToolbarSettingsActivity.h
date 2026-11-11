@@ -20,20 +20,25 @@ class ReaderToolbarSettingsActivity final : public UiListActivity {
   void activateIndex(int index) override;
 };
 
-// The scrolling list of buttons for one toolbar slot. Choosing one saves it
-// and returns.
+// The scrolling list of reader actions for one setting (a toolbar slot or a
+// swipe gesture). Choosing one saves it and returns.
 class ReaderToolPickerActivity final : public UiListActivity {
  public:
-  ReaderToolPickerActivity(GfxRenderer& renderer, MappedInputManager& input, int slot)
-      : UiListActivity("ReaderToolPicker", renderer, input), slot(slot) {}
+  // allowMenu: offer "Reader menu" (gestures; a toolbar button can't open
+  // the toolbar it sits on).
+  ReaderToolPickerActivity(GfxRenderer& renderer, MappedInputManager& input, uint8_t CrossPointSettings::* field,
+                           StrId title, bool allowMenu);
 
   void onEnter() override;
 
  private:
-  const int slot;
+  uint8_t CrossPointSettings::* const field;
+  const StrId title;
+  uint8_t values[static_cast<int>(ReaderTool::Count)]{};
+  int valueCount = 0;
   freeink::ui::ListItem rows[static_cast<int>(ReaderTool::Count)]{};
 
-  int listCount() const override { return static_cast<int>(ReaderTool::Count); }
+  int listCount() const override { return valueCount; }
   const char* headerTitle() const override;
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;

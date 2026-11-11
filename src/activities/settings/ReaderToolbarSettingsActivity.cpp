@@ -32,7 +32,8 @@ void ReaderToolbarSettingsActivity::activateIndex(const int index) {
   if (index < 0 || index >= listCount()) return;
   app.clearTapFlash();
   nav.selected = index;
-  auto picker = makeUniqueNoThrow<ReaderToolPickerActivity>(renderer, mappedInput, index);
+  auto picker = makeUniqueNoThrow<ReaderToolPickerActivity>(renderer, mappedInput, reader_tools::SLOT_FIELDS[index],
+                                                            kSlotNames[index], /*allowMenu=*/false);
   if (!picker) {
     LOG_ERR("SET", "OOM: ReaderToolPickerActivity");
     return;
@@ -56,16 +57,31 @@ void ReaderToolbarSettingsActivity::buildScreen(UiScreen& screen) {
   screen.list(props);
 }
 
-void ReaderToolPickerActivity::onEnter() {
-  UiListActivity::onEnter();
-  nav.reset(slotValue(slot));
+ReaderToolPickerActivity::ReaderToolPickerActivity(GfxRenderer& renderer, MappedInputManager& input,
+                                                   uint8_t CrossPointSettings::* field, const StrId title,
+                                                   const bool allowMenu)
+    : UiListActivity("ReaderToolPicker", renderer, input), field(field), title(title) {
+  for (int v = 0; v < kToolCount; ++v) {
+    if (!allowMenu && v == static_cast<int>(ReaderTool::Menu)) continue;
+    values[valueCount++] = static_cast<uint8_t>(v);
+  }
 }
 
-const char* ReaderToolPickerActivity::headerTitle() const { return I18N.get(kSlotNames[slot]); }
+void ReaderToolPickerActivity::onEnter() {
+  UiListActivity::onEnter();
+  const uint8_t current = SETTINGS.*field;
+  int index = 0;
+  for (int i = 0; i < valueCount; ++i) {
+    if (values[i] == current) index = i;
+  }
+  nav.reset(index);
+}
+
+const char* ReaderToolPickerActivity::headerTitle() const { return I18N.get(title); }
 
 void ReaderToolPickerActivity::activateIndex(const int index) {
   if (index < 0 || index >= listCount()) return;
-  SETTINGS.*reader_tools::SLOT_FIELDS[slot] = static_cast<uint8_t>(index);
+  SETTINGS.*field = values[index];
   SETTINGS.saveToFile();
   app.clearTapFlash();
   finish();
@@ -73,11 +89,11 @@ void ReaderToolPickerActivity::activateIndex(const int index) {
 
 void ReaderToolPickerActivity::buildScreen(UiScreen& screen) {
   listChrome(screen);
-  const int current = slotValue(slot);
+  const uint8_t current = SETTINGS.*field;
   for (int i = 0; i < listCount(); ++i) {
-    rows[i].label = I18N.get(reader_tools::TOOL_NAMES[i]);
+    rows[i].label = I18N.get(reader_tools::TOOL_NAMES[values[i]]);
     rows[i].actionValue = static_cast<int16_t>(i);
-    rows[i].value = i == current ? tr(STR_SELECTED) : nullptr;
+    rows[i].value = values[i] == current ? tr(STR_SELECTED) : nullptr;
   }
   fui::ListProps props;
   props.items = rows;

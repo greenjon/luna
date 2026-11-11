@@ -27,6 +27,7 @@ enum class ReaderTool : uint8_t {
   Screenshot,
   Sync,
   Home,
+  Menu,  // open the reader menu (gestures only, not a toolbar button)
   Count
 };
 
@@ -57,7 +58,13 @@ inline constexpr auto TOOL_NAMES = [] {
   names[static_cast<size_t>(ReaderTool::Screenshot)] = StrId::STR_SCREENSHOT_BUTTON;
   names[static_cast<size_t>(ReaderTool::Sync)] = StrId::STR_SYNC_PROGRESS;
   names[static_cast<size_t>(ReaderTool::Home)] = StrId::STR_GO_HOME_BUTTON;
+  names[static_cast<size_t>(ReaderTool::Menu)] = StrId::STR_READER_MENU;
   return names;
 }();
+
+// Reader swipe gestures (Taps and gestures > Swipe up / Swipe down): a
+// ReaderTool value each, None = nothing.
+inline constexpr std::array<uint8_t CrossPointSettings::*, 2> GESTURE_FIELDS = {&CrossPointSettings::swipeUpAction,
+                                                                                &CrossPointSettings::swipeDownAction};
 
 }  // namespace reader_tools
