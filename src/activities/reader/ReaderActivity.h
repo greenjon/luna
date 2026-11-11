@@ -22,6 +22,7 @@ class ReaderActivity : public Activity {
   std::atomic<bool> endOfBookOptionsReady{false};
   ReaderSession readerSession;
   EdgeBrightnessGesture edgeBrightness;
+  uint32_t sessionPages = 0;  // forward page turns this session (reading statistics)
   std::atomic<bool> pageRendered{false};
   bool bookRemembered = false;
   // When the page now on screen finished drawing (reading pace samples).

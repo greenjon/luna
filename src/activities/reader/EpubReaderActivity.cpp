@@ -48,6 +48,7 @@
 #include "ReaderToolbarUi.h"
 #include "ReaderTools.h"
 #include "ReaderUtils.h"
+#include "ReadingStatsActivity.h"
 #include "RecentBooksStore.h"
 #include "SdCardFont.h"
 #include "SdCardFontSystem.h"
@@ -1275,6 +1276,12 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       openDictionaryWordSelect();
       break;
     }
+    case EpubReaderMenuActivity::MenuAction::READING_STATS:
+      // The open session is saved on close; show it as part of the totals now.
+      startActivityForResult(std::make_unique<ReadingStatsActivity>(renderer, mappedInput, bookPath,
+                                                                    readerSession.durationSeconds(), sessionPages),
+                             [this](const ActivityResult&) { requestUpdate(); });
+      break;
     case EpubReaderMenuActivity::MenuAction::DISPLAY_QR: {
       if (section && section->currentPage >= 0 && section->currentPage < section->pageCount) {
         std::string fullText = section->getTextFromSectionFile();

@@ -37,6 +37,7 @@
 #include "TextSettingsActivity.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/reader/ReaderToolIds.h"
+#include "activities/reader/ReadingStatsActivity.h"
 #include "activities/util/IntervalSelectionActivity.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
@@ -227,6 +228,7 @@ void SettingsActivity::rebuildSettings() {
     addAction(SettingsSection::General, StrId::STR_CLOCK, SettingAction::ClockSettings);
   }
   addAction(SettingsSection::Reader, StrId::STR_CUSTOMISE_STATUS_BAR, SettingAction::CustomiseStatusBar);
+  addAction(SettingsSection::Reader, StrId::STR_READING_STATS, SettingAction::ReadingStats);
   addAction(SettingsSection::Reader, StrId::STR_CLEAR_READING_CACHE, SettingAction::ClearCache);
 
   addAction(SettingsSection::Network, StrId::STR_WIFI_NETWORKS, SettingAction::Network);
@@ -442,6 +444,9 @@ void SettingsActivity::toggleSelectedSetting() {
         startActivityForResult(std::move(activity), [this](const ActivityResult&) { requestUpdate(); });
         return;
       }
+      case SettingAction::ReadingStats:
+        startActivityForResult(std::make_unique<ReadingStatsActivity>(renderer, mappedInput), resultHandler);
+        break;
       case SettingAction::ToolbarButtons: {
         auto activity = makeUniqueNoThrow<ReaderToolbarSettingsActivity>(renderer, mappedInput);
         if (!activity) {

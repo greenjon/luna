@@ -20,6 +20,7 @@
 #include "XtcReaderActivity.h"
 #include "util/PluginEvents.h"
 #include "util/ReadingPace.h"
+#include "util/ReadingStats.h"
 
 ReaderActivity::ReaderActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput,
                                std::string bookPath, const bool allowFastInitialRefresh)
@@ -55,6 +56,7 @@ void ReaderActivity::notePageTurn(const bool forward, const bool succeeded) {
   readerSession.noteTurn(forward, succeeded);
   const uint32_t shown = pageShownMs.load(std::memory_order_relaxed);
   if (forward && succeeded && shown != 0) reading_pace::notePageRead(millis() - shown);
+  if (forward && succeeded) ++sessionPages;
 }
 
 void ReaderActivity::onEnter() {
@@ -132,6 +134,9 @@ void ReaderActivity::onExit() {
 void ReaderActivity::prepareForSleep() { flushReaderSession(); }
 
 void ReaderActivity::flushReaderSession() {
+  reading_stats::record(bookPath, getBookTitle(), readerSession.durationSeconds(), sessionPages,
+                        readerSession.startTime());
+  sessionPages = 0;
   if (!readerSession.isEmitWorthy() || !pluginevents::anySubscriber(pluginevents::Event::ReaderSession)) {
     readerSession.reset();
     return;

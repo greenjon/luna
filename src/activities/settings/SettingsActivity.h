@@ -32,6 +32,7 @@ enum class SettingAction {
   KeyboardLayouts,
   HomeButton,
   ToolbarButtons,
+  ReadingStats,
   ControlsPower,
   ControlsFront,
   ControlsSide,

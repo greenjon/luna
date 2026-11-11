@@ -21,6 +21,15 @@ Settings → Reader → Customise Status Bar → **Title** has a fourth choice,
 page, from the same reading pace. It stays empty until the pace is known.
 EPUB books only.
 
+## Reading statistics
+**Reading statistics** (in the reader menu's More list, as a toolbar button
+or gesture, and under Settings → Reader) shows this book's reading time and
+pages turned, the time read today, in the last 7 and 30 days and in total,
+the reading pace, and the recently read books. Time counts active reading
+only: the time each page stays on screen, with long pauses capped. Totals are
+saved to `/.crosspoint/luna_stats.json` when a book closes or the device
+sleeps (the last 40 books and 60 days are kept). Day totals need the clock.
+
 ## Text weight
 Settings → Reader → **Text weight** (also in the toolbar's Text panel):
 **Normal**, **Medium** or **Heavy** widens every letter's strokes by 0, 1 or
