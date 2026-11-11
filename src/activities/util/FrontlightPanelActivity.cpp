@@ -55,8 +55,9 @@ uint8_t percentFromPermille(const int16_t permille) {
 }
 }  // namespace
 
-FrontlightPanelActivity::FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : Activity("FrontlightPanel", renderer, mappedInput), UiAppHost(renderer) {}
+FrontlightPanelActivity::FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                                                 const bool overReader)
+    : Activity("FrontlightPanel", renderer, mappedInput), UiAppHost(renderer), overReader(overReader) {}
 
 void FrontlightPanelActivity::onEnter() {
   Activity::onEnter();
@@ -83,6 +84,11 @@ void FrontlightPanelActivity::onEnter() {
   app.on(ACTION_WARMTH_STEP, &FrontlightPanelActivity::onWarmthStepEvent, this);
   app.on(ACTION_TILE, &FrontlightPanelActivity::onTileEvent, this);
   app.setScreen(&FrontlightPanelActivity::panelScreen, this);
+  // A reader page on this panel family ran the grayscale anti-aliasing pass;
+  // a FAST paint over it draws the sheet faint, with the page showing
+  // through. Take the ghost-cleanup waveform once, as the reader's own
+  // overlays note for this family.
+  cleanRefreshPending = overReader;
   requestUpdate();
 }
 

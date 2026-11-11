@@ -141,7 +141,8 @@ void ActivityManager::loop() {
     if (mappedInput.hasTouch() && currentActivity->name != "FrontlightPanel" &&
         (statusBarTap || mappedInput.wasLightPanelGesture())) {
       haptic_feedback::touchAction();
-      pushActivity(std::make_unique<FrontlightPanelActivity>(renderer, mappedInput));
+      pushActivity(
+          std::make_unique<FrontlightPanelActivity>(renderer, mappedInput, currentActivity->isReaderActivity()));
       return;
     }
 

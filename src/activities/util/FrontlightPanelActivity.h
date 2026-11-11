@@ -69,9 +69,12 @@ class FrontlightPanelActivity final : public Activity, private UiAppHost {
   // not use this — it closes the panel and promotes the repaint underneath
   // instead (GfxRenderer::promoteNextRefresh).
   bool cleanRefreshPending = false;
+  // Opened over a reader page: the first paint takes the ghost-cleanup
+  // waveform (see onEnter).
+  const bool overReader;
 
  public:
-  explicit FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
+  explicit FrontlightPanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool overReader = false);
   void onEnter() override;
   void onExit() override;
   void loop() override;
