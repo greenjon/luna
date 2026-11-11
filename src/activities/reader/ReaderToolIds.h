@@ -29,6 +29,7 @@ enum class ReaderTool : uint8_t {
   Home,
   Menu,  // open the reader menu (gestures only, not a toolbar button)
   Stats,
+  Search,
   Count
 };
 
@@ -61,6 +62,7 @@ inline constexpr auto TOOL_NAMES = [] {
   names[static_cast<size_t>(ReaderTool::Home)] = StrId::STR_GO_HOME_BUTTON;
   names[static_cast<size_t>(ReaderTool::Menu)] = StrId::STR_READER_MENU;
   names[static_cast<size_t>(ReaderTool::Stats)] = StrId::STR_READING_STATS;
+  names[static_cast<size_t>(ReaderTool::Search)] = StrId::STR_SEARCH_IN_BOOK;
   return names;
 }();
 

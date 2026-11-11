@@ -74,7 +74,8 @@ class EpubReaderActivity final : public ReaderActivity {
   // actions this book can't offer). Rebuilt each time the toolbar opens.
   ReaderTool toolbarTools[ReaderToolbarUi::kMaxTools] = {};
   int toolbarToolCount = 0;
-  int panelIndex = 0;  // selected row within the active panel
+  std::string lastSearchQuery;  // Search in book: prefilled next time
+  int panelIndex = 0;           // selected row within the active panel
   // Panel list navigation: a tap steps one row, a hold jumps PANEL_HOLD_STEP rows in one go
   // (a contents list runs to hundreds of chapters). One jump per hold, not a repeat -- every
   // step repaints the panel, so repeating is bounded by the e-ink refresh anyway and reads as

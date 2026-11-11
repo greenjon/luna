@@ -21,6 +21,16 @@ Settings → Reader → Customise Status Bar → **Title** has a fourth choice,
 page, from the same reading pace. It stays empty until the pace is known.
 EPUB books only.
 
+## Search in book
+**Search in book** (reader menu / More list, or a toolbar button or gesture
+with the magnifier icon) asks for a word or phrase, then searches the whole
+book chapter by chapter, listing each match with its chapter and the text
+around it. Letter case doesn't matter, and any run of spaces or line breaks
+counts as one space. Choose a match to jump to its page. Back stops a running
+search and keeps the matches found so far; the list stops at 100 matches.
+The last query is filled in next time while the book stays open. A large
+book can take a few seconds per chapter on this hardware.
+
 ## Reading statistics
 **Reading statistics** (in the reader menu's More list, as a toolbar button
 or gesture, and under Settings → Reader) shows this book's reading time and

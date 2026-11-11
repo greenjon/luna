@@ -24,6 +24,7 @@
 #include <limits>
 
 #include "../../util/BookmarkFile.h"
+#include "BookSearchActivity.h"
 #include "BookmarkEntry.h"
 #include "ChapterBuildGate.h"
 #include "ClipSelectionActivity.h"
@@ -1276,6 +1277,18 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       openDictionaryWordSelect();
       break;
     }
+    case EpubReaderMenuActivity::MenuAction::SEARCH:
+      startActivityForResult(std::make_unique<BookSearchActivity>(renderer, mappedInput, epub, &lastSearchQuery),
+                             [this](const ActivityResult& result) {
+                               if (!result.isCancelled) {
+                                 if (const auto* jump = std::get_if<ProgressChangeResult>(&result.data)) {
+                                   applyProgressChange(*jump);
+                                   return;
+                                 }
+                               }
+                               requestUpdate();
+                             });
+      break;
     case EpubReaderMenuActivity::MenuAction::READING_STATS:
       // The open session is saved on close; show it as part of the totals now.
       startActivityForResult(std::make_unique<ReadingStatsActivity>(renderer, mappedInput, bookPath,
