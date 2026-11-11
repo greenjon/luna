@@ -19,6 +19,7 @@
 #include "SdCardFontSystem.h"
 #include "XtcReaderActivity.h"
 #include "util/PluginEvents.h"
+#include "util/ReadingPace.h"
 
 ReaderActivity::ReaderActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput,
                                std::string bookPath, const bool allowFastInitialRefresh)
@@ -52,6 +53,8 @@ void ReaderActivity::disableFastInitialRefresh() { pagesUntilFullRefresh = 0; }
 void ReaderActivity::notePageTurn(const bool forward, const bool succeeded) {
   RenderLock lock(*this);
   readerSession.noteTurn(forward, succeeded);
+  const uint32_t shown = pageShownMs.load(std::memory_order_relaxed);
+  if (forward && succeeded && shown != 0) reading_pace::notePageRead(millis() - shown);
 }
 
 void ReaderActivity::onEnter() {
@@ -222,6 +225,8 @@ void ReaderActivity::loop() {
   rememberBookOnceRendered();
   clearEndOfBookOptionsIfNeeded();
   if (handleEndOfBookMenu()) return;
+  // A slide along the left edge sets the frontlight; its frames are not taps or swipes.
+  if (edgeBrightness.update(mappedInput, renderer)) return;
   if (handleFormatInput()) return;
   if (handleBackNavigation()) return;
 

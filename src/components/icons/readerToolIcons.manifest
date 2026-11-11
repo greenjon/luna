@@ -1,0 +1,18 @@
+# Icons for the extra reader toolbar tools (Luna). Regenerate from the
+# repository root with:
+#   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py \
+#     --manifest src/components/icons/readerToolIcons.manifest \
+#     --svgdir freeink-sdk/libs/assets/Icons/lucide/icons \
+#     --sizes 24 --out src/components/icons/readerToolIcons.h
+tool-bookmark = bookmark-plus
+tool-bookmarks = bookmark
+tool-percent = percent
+tool-dictionary = book-a
+tool-clip = highlighter
+tool-night = moon
+tool-light = lightbulb
+tool-rotate = rotate-cw
+tool-autoturn = timer
+tool-screenshot = camera
+tool-sync = refresh-cw
+tool-home = house

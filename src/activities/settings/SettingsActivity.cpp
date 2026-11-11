@@ -27,6 +27,7 @@
 #include "MappedInputManager.h"
 #include "OpdsServerListActivity.h"
 #include "OtaUpdateActivity.h"
+#include "ReaderToolbarSettingsActivity.h"
 #include "SdCardFontSystem.h"
 #include "SdFirmwareUpdateActivity.h"
 #include "SettingsList.h"
@@ -35,6 +36,7 @@
 #include "TapZonesPickerActivity.h"
 #include "TextSettingsActivity.h"
 #include "activities/network/WifiSelectionActivity.h"
+#include "activities/reader/ReaderToolIds.h"
 #include "activities/util/IntervalSelectionActivity.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
@@ -60,6 +62,11 @@ bool showOnDevice(const SettingInfo& setting) {
   // (and stays on the web settings page).
   if (setting.valuePtr == &CrossPointSettings::pageTurnGesture ||
       setting.valuePtr == &CrossPointSettings::previousPageGesture) {
+    return false;
+  }
+  // Toolbar buttons have their own screen (ReaderToolbarSettingsActivity).
+  if (std::find(reader_tools::SLOT_FIELDS.begin(), reader_tools::SLOT_FIELDS.end(), setting.valuePtr) !=
+      reader_tools::SLOT_FIELDS.end()) {
     return false;
   }
   // Merged into the Text Settings screen.
@@ -111,8 +118,9 @@ bool belongsToControlsGroup(const SettingInfo& setting, ControlsGroup group) {
     case ControlsGroup::Touch:
       return field == &CrossPointSettings::touchReaderControls || field == &CrossPointSettings::pageTurnGesture ||
              field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu ||
-             field == &CrossPointSettings::tapZoneLayout || field == &CrossPointSettings::readerMenuStyle ||
-             setting.nameId == StrId::STR_TAP_TO_TURN_PAGES || setting.nameId == StrId::STR_SWIPE_TO_TURN_PAGES;
+             field == &CrossPointSettings::tapZoneLayout || field == &CrossPointSettings::edgeBrightnessSlide ||
+             field == &CrossPointSettings::readerMenuStyle || setting.nameId == StrId::STR_TAP_TO_TURN_PAGES ||
+             setting.nameId == StrId::STR_SWIPE_TO_TURN_PAGES;
     case ControlsGroup::Root:
       return !belongsToControlsGroup(setting, ControlsGroup::Power) &&
              !belongsToControlsGroup(setting, ControlsGroup::Front) &&
@@ -196,6 +204,12 @@ void SettingsActivity::rebuildSettings() {
       return setting.valuePtr == &CrossPointSettings::readerMenuStyle;
     });
     if (row != settings.end()) std::rotate(row, row + 1, settings.end());
+  }
+  // Toolbar buttons sit right after the menu style: on this page on touch
+  // boards, under Reader elsewhere.
+  if ((section == SettingsSection::Controls && controlsGroup == ControlsGroup::Touch && BoardConfig::hasTouch()) ||
+      (section == SettingsSection::Reader && !BoardConfig::hasTouch())) {
+    settings.push_back(SettingInfo::Action(StrId::STR_TOOLBAR_BUTTONS, SettingAction::ToolbarButtons));
   }
 
   if (section == SettingsSection::Controls && controlsGroup == ControlsGroup::Front) {
@@ -408,6 +422,15 @@ void SettingsActivity::toggleSelectedSetting() {
         auto activity = makeUniqueNoThrow<SettingsActivity>(renderer, mappedInput, SettingsSection::Controls, group);
         if (!activity) {
           LOG_ERR("SET", "OOM: Controls settings (%u bytes)", static_cast<unsigned>(sizeof(SettingsActivity)));
+          return;
+        }
+        startActivityForResult(std::move(activity), [this](const ActivityResult&) { requestUpdate(); });
+        return;
+      }
+      case SettingAction::ToolbarButtons: {
+        auto activity = makeUniqueNoThrow<ReaderToolbarSettingsActivity>(renderer, mappedInput);
+        if (!activity) {
+          LOG_ERR("SET", "OOM: Toolbar buttons");
           return;
         }
         startActivityForResult(std::move(activity), [this](const ActivityResult&) { requestUpdate(); });

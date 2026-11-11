@@ -17,6 +17,7 @@
 #include "LinkNoteTitle.h"
 #include "ProgressMapper.h"
 #include "ReaderActivity.h"
+#include "ReaderToolIds.h"
 #include "ReaderToolbarUi.h"
 #include "components/OptionPopup.h"
 
@@ -68,8 +69,12 @@ class EpubReaderActivity final : public ReaderActivity {
   // Toolbar; its tools open the Contents/Text/More bottom-sheet panels.
   enum class Overlay { None, Toolbar, Contents, Text, More };
   Overlay overlay = Overlay::None;
-  int focusedTool = 0;  // toolbar tool focus: 0=Contents, 1=Text, 2=More
-  int panelIndex = 0;   // selected row within the active panel
+  int focusedTool = 0;  // toolbar tool focus: a slot index into toolbarTools
+  // The toolbar's buttons, left to right (Settings > Toolbar buttons, minus
+  // actions this book can't offer). Rebuilt each time the toolbar opens.
+  ReaderTool toolbarTools[ReaderToolbarUi::kMaxTools] = {};
+  int toolbarToolCount = 0;
+  int panelIndex = 0;  // selected row within the active panel
   // Panel list navigation: a tap steps one row, a hold jumps PANEL_HOLD_STEP rows in one go
   // (a contents list runs to hundreds of chapters). One jump per hold, not a repeat -- every
   // step repaints the panel, so repeating is bounded by the e-ink refresh anyway and reads as
@@ -197,6 +202,8 @@ class EpubReaderActivity final : public ReaderActivity {
   std::string moreRowName(int row) const;
   std::string moreRowValue(int row) const;
   void activateMoreRow(int row);
+  void refreshToolbarTools();
+  void runToolbarTool(int slot);
   void openFootnoteSelect(bool reopenMenuOnCancel);
   void openDictionaryWordSelect();
   // Selection to restore when returning from a dictionary lookup.

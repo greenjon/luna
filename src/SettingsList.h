@@ -310,6 +310,9 @@ inline bool isHiddenOnDevice(const SettingInfo& s) {
       return slideSwitchOwns(CrossPointSettings::SLIDE_SWITCH_NIGHT_MODE);
     case StrId::STR_TOUCH_READER_CONTROLS:
       return slideSwitchOwns(CrossPointSettings::SLIDE_SWITCH_TOUCH_CONTROLS);
+    // The edge slide sets the frontlight, which the slide switch may own.
+    case StrId::STR_EDGE_BRIGHTNESS:
+      return !Frontlight.present() || slideSwitchOwnsLight();
     // Tilt page turn needs an IMU with a gyroscope. A failed probe on one boot
     // must not drop the saved value.
     case StrId::STR_TILT_PAGE_TURN:

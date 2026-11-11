@@ -34,7 +34,6 @@ constexpr int16_t kScrubGap = 12;     // air between the buttons and the track
 // pill. The whole slot is the tap target; the row height sets its size.
 constexpr int16_t kToolRowH = 80;
 constexpr int16_t kToolPillInset = 10;
-constexpr int kToolCount = 3;
 // Bottom sheet height for the panels. ListNav fits whole rows in the remaining
 // list area; any spare pixels stay between the list and the switcher.
 constexpr int kPanelHeightPercent = 62;
@@ -99,25 +98,23 @@ void ReaderToolbarUi::screenFn(UiScreen& screen, void* user) {
   }
 }
 
-// The Contents / Text / More row: three equal slots, an icon centred in each,
+// The tool row (Settings > Toolbar buttons): equal slots, an icon centred in each,
 // the active one inside an outline pill (the theme's control radius). Each
 // slot is registered as one tap target, so the row stays light (no filled
 // tiles, no labels -- the glyphs carry the meaning).
 void ReaderToolbarUi::buildToolRow(UiScreen& screen, const fui::LayoutAnchor anchor, const int16_t sideInset) {
   const auto& tokens = screen.theme();
-  const fui::BitmapRef icons[kToolCount] = {fui::bitmapFromIcon(icon_reader_contents_24),
-                                            fui::bitmapFromIcon(icon_reader_text_24),
-                                            fui::bitmapFromIcon(icon_reader_more_24)};
+  const int toolCount = std::clamp(model_.toolCount, 1, kMaxTools);
   // sideInset absorbs the difference between the two hosts' content bands
   // (the toolbar's is spaceLg-inset, the panel's is full width): the slots
   // must land on the same x either way, or the icons jump when a tap swaps
   // the toolbar for a panel.
   const fui::Rect row = screen.take(anchor, kToolRowH).inset(fui::Insets{0, sideInset, 0, sideInset});
-  const int16_t slotW = static_cast<int16_t>(row.width / kToolCount);
+  const int16_t slotW = static_cast<int16_t>(row.width / toolCount);
   // Theme radius as-is (the frontlight panel pattern); the fill clamps to
   // the shape's own height so round themes cannot overshoot.
   const uint8_t pillRadius = tokens.controlRadius;
-  for (int i = 0; i < kToolCount; ++i) {
+  for (int i = 0; i < toolCount; ++i) {
     const fui::Rect slot{static_cast<int16_t>(row.x + slotW * i), row.y, slotW, row.height};
     if (i == model_.activeTool) {
       screen.target().stroke(slot.inset(fui::Insets{4, kToolPillInset, 4, kToolPillInset}),
@@ -125,7 +122,7 @@ void ReaderToolbarUi::buildToolRow(UiScreen& screen, const fui::LayoutAnchor anc
     }
     const fui::Rect iconRect{static_cast<int16_t>(slot.x + (slot.width - 24) / 2),
                              static_cast<int16_t>(slot.y + (slot.height - 24) / 2), 24, 24};
-    screen.target().bitmap(iconRect, icons[i], fui::BitmapMode::Center);
+    screen.target().bitmap(iconRect, model_.toolIcons[i], fui::BitmapMode::Center);
     screen.frame().hit(slot, ACTION_TOOL, static_cast<int16_t>(i), fui::InputTouch);
   }
 }
@@ -146,7 +143,11 @@ void ReaderToolbarUi::buildTopBar(UiScreen& screen) {
     headerProps_.status.clockText = clockText;
   }
   const fui::Rect full = screen.frame().screen();
-  const auto bandBottom = static_cast<int16_t>(metrics.topPadding + metrics.headerHeight);
+  const auto headerBottom = static_cast<int16_t>(metrics.topPadding + metrics.headerHeight);
+  // Optional second line under the header: the time left.
+  const int16_t smallLineH = screen.target().lineHeight(theme.smallText.font);
+  const auto extraH = static_cast<int16_t>(model_.timeLeft ? smallLineH + theme.spaceSm * 2 : 0);
+  const auto bandBottom = static_cast<int16_t>(headerBottom + extraH);
   // Full-bleed white behind the band, so no page text shows above or beside it.
   screen.target().fill(fui::Rect{full.x, full.y, full.width, static_cast<int16_t>(bandBottom - full.y)},
                        fui::Paint::solid(fui::Color::White));
@@ -157,12 +158,24 @@ void ReaderToolbarUi::buildTopBar(UiScreen& screen) {
   headerProps_.titleText = theme.titleText;
   headerProps_.titleText.align = theme.headerTitleAlign;
   headerProps_.styles = theme.popup;
-  // Same 2px rule as the bottom sheet's edge, whatever the theme's underline.
-  headerProps_.styles.normal.border = fui::Paint::solid(fui::Color::Black);
-  headerProps_.styles.normal.borderWidth = 2;
+  // The band's own 2px rule (as on the bottom sheet's edge) goes under the
+  // whole band below, whatever the theme's underline.
+  headerProps_.borderEdges = 0;
+  headerProps_.styles.normal.border = fui::Paint::none();
+  headerProps_.styles.normal.borderWidth = 0;
   headerProps_.sidePadding = theme.headerSidePadding;
   headerProps_.minTouchSize = theme.minTouchSize;
   fui::header(screen.frame(), band, headerProps_);
+  if (model_.timeLeft) {
+    fui::TextStyle style = theme.smallText;
+    style.align = fui::TextAlign::Center;
+    const fui::Rect line{static_cast<int16_t>(band.x + theme.headerSidePadding),
+                         static_cast<int16_t>(headerBottom + theme.spaceSm),
+                         static_cast<int16_t>(band.width - 2 * theme.headerSidePadding), smallLineH};
+    screen.target().text(line, model_.timeLeft, style);
+  }
+  screen.target().fill(fui::Rect{full.x, static_cast<int16_t>(bandBottom - 2), full.width, 2},
+                       fui::Paint::solid(fui::Color::Black));
 }
 
 void ReaderToolbarUi::buildToolbar(UiScreen& screen) {

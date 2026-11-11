@@ -14,10 +14,19 @@ options depend on the device.
     turn the page.
   - **Tap zones** chooses which parts of the page turn back, turn forward, or
     open the reader menu (see below).
+  - **Slide left edge for brightness** (devices with a frontlight): slide a
+    finger up or down the left edge of the page to change the brightness
+    while reading. A tap on the edge still turns the page.
   - **Show Reader Menu** (X4 Pro) chooses how the reader menu opens: Tap,
     Swipe up from the bottom edge, or Off.
   - **Reader Menu Style** chooses the List menu or the Toolbar. On devices
     without touch it stays under Settings → Reader.
+  - **Toolbar buttons** chooses up to five buttons for the toolbar, left to
+    right: the Contents, Text and More panels, or a direct action such as
+    Bookmark, Go to %, Look up, Night mode, Frontlight, Orientation, Auto
+    turn, Screenshot, Sync or Home. Empty slots are left out. Buttons for
+    actions the book can't offer right now (no dictionary, no sync account)
+    are hidden.
 
 **Tap zones** draws each layout as a small page: gray turns back, white turns
 forward, black opens the reader menu. Tap a layout to choose it. **Classic** is

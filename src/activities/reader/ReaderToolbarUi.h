@@ -26,12 +26,15 @@ class MappedInputManager;
 // clears the screen: the page stays visible around the chrome.
 class ReaderToolbarUi : public UiAppHost {
  public:
+  static constexpr int kMaxTools = 5;
+
   enum class Event { None = 0, Dismiss = 1, Tool = 2, PrevChapter = 3, NextChapter = 4, Scrub = 5, Row = 6 };
 
   struct Model {
     bool panel = false;  // false = toolbar, true = a Contents/Text/More panel
     // Toolbar
     const char* bookTitle = nullptr;  // top bar title
+    const char* timeLeft = nullptr;   // top bar second line; nullptr = none
     const char* chapterTitle = nullptr;
     const char* pageInfo = nullptr;  // "12/40   51%"
     int progressPermille = 0;        // 0..1000 book progress (scrub handle)
@@ -43,7 +46,10 @@ class ReaderToolbarUi : public UiAppHost {
     std::function<std::string(int)> rowValue;
     void (*rowCheckbox)(void* ctx, int index, freeink::ui::ListItem& item) = nullptr;
     void* rowCheckboxContext = nullptr;
-    // Tile row: the tool in focus (toolbar) / the open panel (panel). 0..2.
+    // Tile row: the buttons left to right (Settings > Toolbar buttons), and
+    // the one in focus (toolbar) / the open panel (panel); -1 = none.
+    int toolCount = 0;
+    freeink::ui::BitmapRef toolIcons[kMaxTools];
     int activeTool = 0;
     // Button boards keep the theme's denser list row height (as every other
     // list does there); touch boards use FreeInkUI's finger-sized rows.

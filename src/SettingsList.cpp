@@ -3,6 +3,7 @@
 #include <array>
 #include <utility>
 
+#include "activities/reader/ReaderToolIds.h"
 #include "activities/settings/TapZoneLayoutNames.h"
 
 namespace {
@@ -206,6 +207,8 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
     // settings page shows the names.
     emit(SettingInfo::StaticEnum(StrId::STR_TAP_ZONES, &CrossPointSettings::tapZoneLayout, TAP_ZONE_LAYOUT_NAMES,
                                  "tapZoneLayout", StrId::STR_CAT_CONTROLS));
+    emit(SettingInfo::Toggle(StrId::STR_EDGE_BRIGHTNESS, &CrossPointSettings::edgeBrightnessSlide,
+                             "edgeBrightnessSlide", StrId::STR_CAT_CONTROLS));
   }
   // The reader-menu gesture choice only makes sense where the menu stays
   // reachable without the tap and the bottom edge is free (the capacitive
@@ -417,6 +420,19 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
   // on next WiFi connect, which is useful when crossing time zones.
   emit(SettingInfo::Toggle(StrId::STR_CLOCK_SYNCED, &CrossPointSettings::clockHasBeenSynced, "clockHasBeenSynced",
                            StrId::STR_CUSTOMISE_STATUS_BAR));
+  // Reader toolbar buttons (persistence + web; the device UI is
+  // ReaderToolbarSettingsActivity).
+  {
+    static constexpr StrId kSlotNames[] = {StrId::STR_TOOLBAR_BUTTON_1, StrId::STR_TOOLBAR_BUTTON_2,
+                                           StrId::STR_TOOLBAR_BUTTON_3, StrId::STR_TOOLBAR_BUTTON_4,
+                                           StrId::STR_TOOLBAR_BUTTON_5};
+    static constexpr const char* kSlotKeys[] = {"toolbarTool1", "toolbarTool2", "toolbarTool3", "toolbarTool4",
+                                                "toolbarTool5"};
+    for (int i = 0; i < reader_tools::kMaxSlots; ++i) {
+      emit(SettingInfo::StaticEnum(kSlotNames[i], reader_tools::SLOT_FIELDS[i], reader_tools::TOOL_NAMES, kSlotKeys[i],
+                                   StrId::STR_CAT_READER));
+    }
+  }
   if (BoardConfig::hasHomeKey()) {
     for (unsigned i = 0; i < 3; ++i) {
       emit(SettingInfo::StaticEnum(home_button::GESTURE_LABELS[i], home_button::FIELDS[i], home_button::ACTION_LABELS,

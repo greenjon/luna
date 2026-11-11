@@ -21,6 +21,10 @@ class CrossPointState : public PersistableStore<CrossPointState> {
   uint8_t readerActivityLoadCount = 0;
   bool lastSleepFromReader = false;
   bool showBootScreen = true;
+  // Reading pace (util/ReadingPace.h): average seconds a page stays on screen
+  // before a forward turn, and how many turns that average has seen.
+  float secondsPerPage = 0.0f;
+  uint16_t paceSamples = 0;
 
   static const char* getFilePath() { return "/.crosspoint/state.json"; }
   void toJson(JsonDocument& doc) const;

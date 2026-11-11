@@ -46,6 +46,7 @@
 #include "ReaderFontSizes.h"
 #include "ReaderLineSpacing.h"
 #include "ReaderToolbarUi.h"
+#include "ReaderTools.h"
 #include "ReaderUtils.h"
 #include "RecentBooksStore.h"
 #include "SdCardFont.h"
@@ -59,6 +60,7 @@
 #include "fontIds.h"
 #include "util/BookmarkUtil.h"
 #include "util/ButtonNavigator.h"
+#include "util/ReadingPace.h"
 #include "util/ScreenshotUtil.h"
 
 namespace {
@@ -771,6 +773,9 @@ void EpubReaderActivity::loop() {
   } else {
     pendingReadFolderMove = false;
   }
+
+  // A slide along the left edge sets the frontlight; its frames are not taps or swipes.
+  if (overlay == Overlay::None && !overlayPopup.isActive() && edgeBrightness.update(mappedInput, renderer)) return;
 
   const auto touch =
       ReaderUtils::detectTouchPageTurn(renderer, mappedInput, ReaderUtils::isRtlBookLanguage(epub->getLanguage()));
@@ -2647,7 +2652,10 @@ void EpubReaderActivity::openOverlay(Overlay target) {
   const Overlay previous = overlay;
   overlay = target;
   if (!toolbarUi) toolbarUi = std::make_unique<ReaderToolbarUi>(renderer);
-  if (previous == Overlay::None) toolbarUi->begin();
+  if (previous == Overlay::None) {
+    toolbarUi->begin();
+    refreshToolbarTools();
+  }
   // Buttons show a cursor from the start; touch boards only once a button moves it.
   panelCursorShown = !mappedInput.hasTouch();
   switch (target) {
@@ -2742,8 +2750,12 @@ void EpubReaderActivity::renderOverlay() {
   // convention as the panel lists), it only shows once a button has moved it.
   // Panels override below: there the pill marks the open panel on every board.
   model.activeTool = (overlay == Overlay::Toolbar && !panelCursorShown) ? -1 : focusedTool;
+  model.toolCount = toolbarToolCount;
+  for (int i = 0; i < toolbarToolCount; ++i) {
+    model.toolIcons[i] = freeink::ui::bitmapFromIcon(*reader_tools::info(toolbarTools[i]).icon);
+  }
   // Strings the model points at live here until render() returns.
-  std::string chapterTitle, pageInfo;
+  std::string chapterTitle, pageInfo, timeLeft;
 
   if (overlay == Overlay::Toolbar) {
     chapterTitle = currentChapterTitle();
@@ -2754,6 +2766,25 @@ void EpubReaderActivity::renderOverlay() {
     pageInfo = std::to_string(section->currentPage + 1) + "/" + std::to_string(pageCount) + "   " +
                std::to_string(clampPercent(static_cast<int>(bookProgress * 100.0f + 0.5f))) + "%";
     model.bookTitle = epub->getTitle().c_str();
+    // Time left: pages left at the measured pace. The book's remaining pages
+    // are estimated from this chapter's pages per share of the book.
+    if (reading_pace::known() && pageCount > 0) {
+      const auto chapterPagesLeft = static_cast<float>(pageCount - section->currentPage);
+      const float spanStart = epub->calculateProgress(currentSpineIndex, 0.0f);
+      const float spanEnd = epub->calculateProgress(currentSpineIndex, 1.0f);
+      float bookPagesLeft = chapterPagesLeft;
+      if (spanEnd - spanStart > 0.0001f) {
+        bookPagesLeft += std::max(0.0f, 1.0f - spanEnd) * static_cast<float>(pageCount) / (spanEnd - spanStart);
+      }
+      char chapterText[24];
+      char bookText[24];
+      char line[96];
+      reading_pace::formatDuration(chapterText, sizeof(chapterText), reading_pace::secondsForPages(chapterPagesLeft));
+      reading_pace::formatDuration(bookText, sizeof(bookText), reading_pace::secondsForPages(bookPagesLeft));
+      snprintf(line, sizeof(line), tr(STR_TIME_LEFT_FORMAT), chapterText, bookText);
+      timeLeft = line;
+      model.timeLeft = timeLeft.c_str();
+    }
     model.chapterTitle = chapterTitle.c_str();
     model.pageInfo = pageInfo.c_str();
     model.progressPermille = static_cast<int>(bookProgress * 1000.0f + 0.5f);
@@ -2851,9 +2882,6 @@ void EpubReaderActivity::handleOverlayInput() {
     }
     requestUpdate();
   };
-  const auto toolOverlay = [](int tool) {
-    return tool == 0 ? Overlay::Contents : (tool == 1 ? Overlay::Text : Overlay::More);
-  };
 
   // Touch first: FreeInkUI routes the frame against the tap targets the last
   // render registered and hands back the action it mapped to.
@@ -2866,8 +2894,7 @@ void EpubReaderActivity::handleOverlayInput() {
         closeOverlayToPage();
         return;
       case ReaderToolbarUi::Event::Tool:
-        focusedTool = routed.value;
-        openOverlay(toolOverlay(focusedTool));
+        runToolbarTool(routed.value);
         return;
       case ReaderToolbarUi::Event::PrevChapter:
         gotoSpine(currentSpineIndex - 1);
@@ -2890,19 +2917,19 @@ void EpubReaderActivity::handleOverlayInput() {
       return;
     }
     if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      focusedTool = (focusedTool + 2) % 3;
+      focusedTool = (focusedTool + toolbarToolCount - 1) % std::max(1, toolbarToolCount);
       panelCursorShown = true;
       fastRedraw();
       return;
     }
     if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
-      focusedTool = (focusedTool + 1) % 3;
+      focusedTool = (focusedTool + 1) % std::max(1, toolbarToolCount);
       panelCursorShown = true;
       fastRedraw();
       return;
     }
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      openOverlay(toolOverlay(focusedTool));
+      runToolbarTool(focusedTool);
       return;
     }
     const bool prev = mappedInput.wasReleased(MappedInputManager::Button::Up);
@@ -3009,15 +3036,10 @@ void EpubReaderActivity::handleOverlayInput() {
     case ReaderToolbarUi::Event::Dismiss:
       dismissPanel();
       return;
-    case ReaderToolbarUi::Event::Tool: {
-      // Sheet-bottom tool switcher: hop straight to another panel.
-      const Overlay target = toolOverlay(routed.value);
-      if (target != overlay) {
-        focusedTool = routed.value;
-        openOverlay(target);
-      }
+    case ReaderToolbarUi::Event::Tool:
+      // Sheet-bottom tool row: hop to another panel, or run the button's action.
+      if (routed.value != focusedTool) runToolbarTool(routed.value);
       return;
-    }
     case ReaderToolbarUi::Event::Row:
       // A tap on the right-edge strip pages the sheet instead (upper half =
       // previous page, lower half = next): swipes are unreliable on etched
@@ -3152,6 +3174,53 @@ std::string EpubReaderActivity::moreRowValue(int row) const {
                  : std::to_string(PAGE_TURN_RATES[autoTurnOption]);
     default:
       return "";
+  }
+}
+
+// The toolbar's buttons from Settings > Toolbar buttons, minus actions the
+// More list does not offer right now (no dictionary, no sync account, ...).
+// No buttons set falls back to the stock Contents / Text / More.
+void EpubReaderActivity::refreshToolbarTools() {
+  buildMoreActions();
+  toolbarToolCount = 0;
+  for (const auto field : reader_tools::SLOT_FIELDS) {
+    const uint8_t value = SETTINGS.*field;
+    if (value == 0 || value >= static_cast<uint8_t>(ReaderTool::Count)) continue;
+    const auto tool = static_cast<ReaderTool>(value);
+    if (!reader_tools::isPanel(tool)) {
+      const auto action = reader_tools::info(tool).action;
+      if (std::none_of(moreItems.begin(), moreItems.end(),
+                       [action](const auto& item) { return item.action == action; }))
+        continue;
+    }
+    toolbarTools[toolbarToolCount++] = tool;
+  }
+  if (toolbarToolCount == 0) {
+    toolbarTools[0] = ReaderTool::Contents;
+    toolbarTools[1] = ReaderTool::Text;
+    toolbarTools[2] = ReaderTool::More;
+    toolbarToolCount = 3;
+  }
+  focusedTool = std::clamp(focusedTool, 0, toolbarToolCount - 1);
+}
+
+void EpubReaderActivity::runToolbarTool(const int slot) {
+  if (slot < 0 || slot >= toolbarToolCount) return;
+  const ReaderTool tool = toolbarTools[slot];
+  if (reader_tools::isPanel(tool)) {
+    focusedTool = slot;
+    openOverlay(tool == ReaderTool::Contents ? Overlay::Contents
+                : tool == ReaderTool::Text   ? Overlay::Text
+                                             : Overlay::More);
+    return;
+  }
+  // A direct button runs the same action as its row in the More list.
+  const auto action = reader_tools::info(tool).action;
+  for (size_t row = 0; row < moreItems.size(); ++row) {
+    if (moreItems[row].action == action) {
+      activateMoreRow(static_cast<int>(row));
+      return;
+    }
   }
 }
 

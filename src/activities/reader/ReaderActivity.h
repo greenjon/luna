@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "EdgeBrightnessGesture.h"
 #include "EndOfBookOptions.h"
 #include "ReaderSession.h"
 #include "activities/Activity.h"
@@ -20,9 +21,15 @@ class ReaderActivity : public Activity {
   std::unique_ptr<EndOfBookOptions> endOfBookOptions;
   std::atomic<bool> endOfBookOptionsReady{false};
   ReaderSession readerSession;
+  EdgeBrightnessGesture edgeBrightness;
   std::atomic<bool> pageRendered{false};
   bool bookRemembered = false;
-  void markPageRendered() { pageRendered.store(true, std::memory_order_release); }
+  // When the page now on screen finished drawing (reading pace samples).
+  std::atomic<uint32_t> pageShownMs{0};
+  void markPageRendered() {
+    pageShownMs.store(millis(), std::memory_order_relaxed);
+    pageRendered.store(true, std::memory_order_release);
+  }
   void rememberBookOnceRendered();
 
   explicit ReaderActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput,
