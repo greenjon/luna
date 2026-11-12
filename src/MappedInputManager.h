@@ -147,6 +147,7 @@ class MappedInputManager {
   // bookkeeping; the wrappers below give each edge its board meaning.
   bool wasEdgeSwipe(freeink::ui::ScreenEdge edge) const;
   bool wasTopEdgeDownSwipe() const;
+  bool wasRightEdgeBackSwipe() const;
   bool wasBottomEdgeUpSwipe() const;
   // Fetch the pending swipe (if any) and map both endpoints to logical screen coords
   bool decodeSwipe(int& sx, int& sy, int& ex, int& ey) const;

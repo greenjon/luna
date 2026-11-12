@@ -120,9 +120,9 @@ bool belongsToControlsGroup(const SettingInfo& setting, ControlsGroup group) {
       return field == &CrossPointSettings::touchReaderControls || field == &CrossPointSettings::pageTurnGesture ||
              field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu ||
              field == &CrossPointSettings::tapZoneLayout || field == &CrossPointSettings::edgeBrightnessSlide ||
-             field == &CrossPointSettings::swipeUpAction || field == &CrossPointSettings::swipeDownAction ||
-             field == &CrossPointSettings::readerMenuStyle || setting.nameId == StrId::STR_TAP_TO_TURN_PAGES ||
-             setting.nameId == StrId::STR_SWIPE_TO_TURN_PAGES;
+             field == &CrossPointSettings::rightEdgeBack || field == &CrossPointSettings::swipeUpAction ||
+             field == &CrossPointSettings::swipeDownAction || field == &CrossPointSettings::readerMenuStyle ||
+             setting.nameId == StrId::STR_TAP_TO_TURN_PAGES || setting.nameId == StrId::STR_SWIPE_TO_TURN_PAGES;
     case ControlsGroup::Root:
       return !belongsToControlsGroup(setting, ControlsGroup::Power) &&
              !belongsToControlsGroup(setting, ControlsGroup::Front) &&

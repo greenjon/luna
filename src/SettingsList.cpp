@@ -212,6 +212,8 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
                                  "tapZoneLayout", StrId::STR_CAT_CONTROLS));
     emit(SettingInfo::Toggle(StrId::STR_EDGE_BRIGHTNESS, &CrossPointSettings::edgeBrightnessSlide,
                              "edgeBrightnessSlide", StrId::STR_CAT_CONTROLS));
+    emit(SettingInfo::Toggle(StrId::STR_RIGHT_EDGE_BACK, &CrossPointSettings::rightEdgeBack, "rightEdgeBack",
+                             StrId::STR_CAT_CONTROLS));
     // The device rows open ReaderToolPickerActivity (the list is too long for a popup).
     emit(SettingInfo::StaticEnum(StrId::STR_SWIPE_UP_ACTION, &CrossPointSettings::swipeUpAction,
                                  reader_tools::TOOL_NAMES, "swipeUpAction", StrId::STR_CAT_CONTROLS));

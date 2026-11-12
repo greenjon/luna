@@ -17,6 +17,12 @@ options depend on the device.
   - **Slide left edge for brightness** (devices with a frontlight): slide a
     finger up or down the left edge of the page to change the brightness
     while reading. A tap on the edge still turns the page.
+  - **Swipe in from right edge for Back** (on by default): a right-to-left
+    swipe that starts at the very right edge of the screen works as Back,
+    like Android's back gesture. CrossPoint's swipe in from the left edge
+    keeps working too. On the reading page itself neither one leaves the
+    book (a swipe there turns the page); they close menus and panels, cancel
+    dialogs, return from a footnote and go up a level everywhere else.
   - **Swipe up** and **Swipe down**: an action for a vertical swipe in the
     middle of the page, such as the reader menu, Contents, Bookmark here,
     Night mode or Frontlight. Off by default. Swipes that start near the top

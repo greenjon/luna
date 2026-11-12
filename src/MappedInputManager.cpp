@@ -411,7 +411,24 @@ bool MappedInputManager::wasBackGesture() const {
   // Back = left-to-right swipe starting near the left edge. Edge-anchored so that
   // mid-screen horizontal swipes stay available to activities that consume
   // SwipeDir::Left/Right (e.g. percent selection, image viewer).
-  return wasEdgeSwipe(fui::ScreenEdge::Left);
+  if (wasEdgeSwipe(fui::ScreenEdge::Left)) return true;
+  // Luna: also right-to-left from a narrow strip at the right edge, as on
+  // Android. Narrow so leftward swipes that start on the page (next page,
+  // swipe-to-delete rows) stay theirs.
+  return SETTINGS.rightEdgeBack && wasRightEdgeBackSwipe();
+}
+
+bool MappedInputManager::wasRightEdgeBackSwipe() const {
+  constexpr float kRightEdgeBackFrac = 0.08f;
+  int sx = 0;
+  int sy = 0;
+  int ex = 0;
+  int ey = 0;
+  if (!decodeSwipe(sx, sy, ex, ey)) return false;
+  const bool hit = fui::edgeSwipe(fui::ScreenEdge::Right, sx, sy, ex, ey, renderer.getScreenWidth(),
+                                  renderer.getScreenHeight(), kRightEdgeBackFrac);
+  if (hit) rememberTouchHeldTime();
+  return hit;
 }
 
 bool MappedInputManager::wasTopEdgeDownSwipe() const { return wasEdgeSwipe(fui::ScreenEdge::Top); }
